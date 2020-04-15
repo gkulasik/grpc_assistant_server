@@ -13,10 +13,6 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
   DEFAULT_PRESENT_ERROR = 'Option PRESENT did not return expected result'
   DEFAULT_OMITTED_ERROR = 'Option OMITTED did not return expected result'
 
-  test "the truth" do
-    assert true
-  end
-
   test "Init via constructor" do
     builder = GrpcurlBuilder.new(import_path: DEFAULT_IMPORT_PATH,
                                  service_proto_path: DEFAULT_PROTO_PATH,
@@ -39,7 +35,7 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
 
   end
 
-  test "Init via from_params" do
+  test "init via from_params" do
     headers = DEFAULT_HEADERS
     params = {
         "options" => {
