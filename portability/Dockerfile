@@ -4,7 +4,7 @@ FROM ruby:2.5.5
 # Install/update dependencies
 RUN apt-get update -qq && apt-get install -y build-essential nano software-properties-common postgresql postgresql-contrib
 RUN apt-get install -y libpq-dev libxml2-dev libxslt1-dev libqt4-dev xvfb nodejs
-RUN gem install bundler
+RUN gem install bundler:2.0.1
 
 # Clone repo
 RUN mkdir /grpc_server_assistant

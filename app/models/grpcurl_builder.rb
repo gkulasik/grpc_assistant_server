@@ -1,7 +1,7 @@
 class GrpcurlBuilder
   attr_accessor :import_path, # @type [String] import_path
                 :service_proto_path, # @type [String] service_proto_path
-                :data, # @type [String] JSON data
+                :data, # @type [Hash] JSON structured data
                 :insecure, # @type [Boolean] insecure
                 :server_address, # @type [String] server_address
                 :service_name, # @type [String] service_name
@@ -9,7 +9,7 @@ class GrpcurlBuilder
                 :verbose_output, # @type [Boolean] verbose_output
                 :headers # @type [Hash] headers
 
-
+  # @return [GrpcurlBuilder]
   def initialize(params = {})
     @import_path = params.fetch(:import_path, nil)
     @service_proto_path = params.fetch(:service_proto_path, nil)
@@ -19,9 +19,13 @@ class GrpcurlBuilder
     @service_name = params.fetch(:service_name, nil)
     @method_name = params.fetch(:method_name, nil)
     @verbose_output = params.fetch(:verbose_output, false)
-    @headers = params.fetch(:headers, Hash.new())
+    @headers = params.fetch(:headers, Hash.new)
   end
 
+  # Helper to generate GrpcBuilder in format easier for controller
+  # @param [Hash] headers
+  # @param [Hash] params
+  # @return [GrpcurlBuilder]
   def self.from_params(headers, params)
     options = params["options"] || {}
     data = params["data"]
@@ -29,19 +33,22 @@ class GrpcurlBuilder
         import_path: options["import_path"],
         service_proto_path: options["service_proto_path"],
         insecure: options["insecure"],
-        server_address: options["server_address"],
-        service_name: options["service_name"],
-        method_name: options["method_name"],
         verbose_output: options["verbose"],
+        server_address: params["server_address"],
+        service_name: params["service_name"],
+        method_name: params["method_name"],
         data: data,
-        headers: headers || Hash.new()}
+        headers: headers || Hash.new }
     GrpcurlBuilder.new(build_params)
   end
 
+  # @return [TrueClass, FalseClass]
   def valid?
     errors.empty?
   end
 
+  # Simple error checking, only three fields are truly required
+  # @return [Array<String>]
   def errors
     errors = []
     unless @method_name.present?
@@ -56,7 +63,10 @@ class GrpcurlBuilder
     errors
   end
 
-  def build
+  # Builds the grpcurl command
+  # @param [Boolean] to_execute - handle the fact that escaping makes the command and execute different
+  # @return [String]
+  def build(to_execute = false)
     grpcurl = "grpcurl "
     # Tags
     grpcurl = add_import_path(grpcurl)
@@ -64,7 +74,7 @@ class GrpcurlBuilder
     grpcurl = add_headers(grpcurl)
     grpcurl = add_insecure(grpcurl)
     grpcurl = add_verbose(grpcurl)
-    grpcurl = add_data(grpcurl)
+    grpcurl = add_data(grpcurl, to_execute)
     # Address
     grpcurl = add_server_address(grpcurl)
     # Symbol (service call)
@@ -75,6 +85,11 @@ class GrpcurlBuilder
 
   private
 
+  # General appending method
+  # @param [Object] variable
+  # @param [String] original_string
+  # @param [String] to_append
+  # @return [String]
   def add_if_present(variable, original_string, to_append)
     if variable.present?
       original_string + to_append
@@ -83,38 +98,53 @@ class GrpcurlBuilder
     end
   end
 
+  # Adds -import-path tag to grpcurl command
   def add_import_path(current_string)
     add_if_present(@import_path, current_string, " -import-path #{@import_path} ")
   end
 
+  # Adds -proto tag to grpcurl command
   def add_service_proto_path(current_string)
     add_if_present(@service_proto_path, current_string, " -proto #{@service_proto_path} ")
   end
 
-  def add_data(current_string)
-    add_if_present(@data, current_string, " -d #{@data} ")
+  # Adds data to grpcurl command
+  # This required an extra flag because if we are executing the command we need to leave in the \" but
+  # when we are copying and pasting the command to run manually or reproduce we need to have that left out else on
+  # print it will show up as \\\" instead of \"
+  def add_data(current_string, to_execute)
+    json_data = @data.to_json
+    formatted_data = to_execute ? json_data.gsub("\"", "\\\"") : json_data
+    add_if_present(@data, current_string, " -d #{formatted_data} ")
   end
 
+  # Adds -v tag to grpcurl command
   def add_verbose(current_string)
     add_if_present(@verbose_output, current_string, " -v ")
   end
 
+  # Adds -plaintext tag to grpcurl command
   def add_insecure(current_string)
     add_if_present(@insecure, current_string, " -plaintext ")
   end
 
+  # Adds server address to the grpcurl command
   def add_server_address(current_string)
     add_if_present(@server_address, current_string, " #{@server_address} ")
   end
 
+  # Adds service name to the grpcurl command
   def add_service_name(current_string)
     add_if_present(@service_name, current_string, " #{@service_name}")
   end
 
+  # Adds method name to the grpcurl command
+  # Using / syntax instead of . - this was arbitrarily chosen and may change or be made configurable.
   def add_method_name(current_string)
     add_if_present(@method_name, current_string, "/#{@method_name} ")
   end
 
+  # Adds -H headers to the grpcurl command
   def add_headers(current_string)
     return current_string if @headers.nil?
     string_headers = @headers.map { |k, v| " -H '#{k}:#{v}' " }.join("")
