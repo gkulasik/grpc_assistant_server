@@ -15,6 +15,7 @@ services:
       - database
     volumes:
       - ./:/app
+      - /Users:/app/Users
     environment:
       RAILS_ENV: development
       DATABASE_URL: postgres://postgres@database

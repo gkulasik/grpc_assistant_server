@@ -1,11 +1,20 @@
-# Start with a Ruby base
 FROM ruby:2.5.5
 
 # Install/update dependencies
-#RUN apt-get update -qq && apt-get install -y build-essential nano software-properties-common postgresql postgresql-contrib tzdata
-#RUN apt-get install -y libpq-dev libxml2-dev libxslt1-dev libqt4-dev xvfb nodejs
-RUN gem install bundler -v '2.0.1'
+RUN apt-get update && apt-get install -y golang-go git make musl-dev
 
+# Configure Go
+ENV GOROOT /usr/lib/go
+ENV GOPATH /go
+ENV PATH /go/bin:$PATH
+
+# Install grpcurl
+RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
+RUN go get github.com/fullstorydev/grpcurl
+RUN go install github.com/fullstorydev/grpcurl/cmd/grpcurl
+
+# Setup ruby/app env
+RUN gem install bundler -v '2.0.1'
 RUN mkdir /app
 WORKDIR /app
 
