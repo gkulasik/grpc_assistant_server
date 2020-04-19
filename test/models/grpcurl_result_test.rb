@@ -3,10 +3,10 @@ class GrpcurlResultTest < ActiveSupport::TestCase
 
   test 'init parses response when proper' do
     example_result = build(:grpcurl_result_success)
-    success_result = GrpcurlResult.new({command: example_result.command, raw_output: example_result.raw_output, raw_errors: nil})
+    success_result = GrpcurlResult.new({ command: example_result.command, raw_output: example_result.raw_output, raw_errors: nil })
     assert_not_nil success_result.clean_response
 
-    failure_result = GrpcurlResult.new({command: example_result.command, raw_output: nil, raw_errors: "errors"})
+    failure_result = GrpcurlResult.new({ command: example_result.command, raw_output: nil, raw_errors: "errors" })
     assert_nil failure_result.clean_response
   end
 
@@ -41,10 +41,14 @@ class GrpcurlResultTest < ActiveSupport::TestCase
     assert_nil result.parse_raw_output("{}")
 
     # Success cases
-    expected_one = {"test" => {"foo" => "bar"}}
+    expected_one = { "test" => { "foo" => "bar" } }
     assert_equal expected_one, result.parse_raw_output("foo bar \n #{GrpcurlResult::GRPC_RESPONSE_START_MARKER}\n{\"test\":{\"foo\":\"bar\"}\n}\n#{GrpcurlResult::GRPC_RESPONSE_END_MARKER}")
-    expected_two = {"foo" => "bar",  "bar"  => "foo", "one" => 1}
+
+    expected_two = { "foo" => "bar", "bar" => "foo", "one" => 1 }
     assert_equal expected_two, result.parse_raw_output("#{GrpcurlResult::GRPC_RESPONSE_START_MARKER}{\"foo\":  \n  \"bar\",   \"bar\":\"foo\",\"one\":1}#{GrpcurlResult::GRPC_RESPONSE_END_MARKER}    \n foobar")
+
+    expected_three = { "test" => ["foo", "bar"], "foo" => "bar" }
+    assert_equal expected_three, result.parse_raw_output("test test \ntest [] {test-data} \n #{GrpcurlResult::GRPC_RESPONSE_START_MARKER}\n{\"test\":[\"foo\",\"bar\"], \"foo\":\"bar\"\n}\n#{GrpcurlResult::GRPC_RESPONSE_END_MARKER}")
   end
 
   test 'to api response - success' do
