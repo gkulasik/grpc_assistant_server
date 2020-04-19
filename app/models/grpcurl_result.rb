@@ -4,6 +4,10 @@ class GrpcurlResult
                 :raw_errors, # @type [String] raw_errors
                 :clean_response # @type [String] clean_response
 
+
+  GRPC_RESPONSE_START_MARKER = 'Response contents:'
+  GRPC_RESPONSE_END_MARKER = 'Response trailers received:'
+
   # Init with hash - accepted params:
   # @param [String] command
   # @param [String] raw_output
@@ -40,18 +44,23 @@ class GrpcurlResult
       puts "Nil input"
       return nil
     end
-    isolated_elements = output.scan(/{([^}]*)}/)
-    if isolated_elements.empty?
-      puts "No curly brackets: #{output}"
+    response_start = output.index(GRPC_RESPONSE_START_MARKER)
+    response_end = output.index(GRPC_RESPONSE_END_MARKER)
+
+    if response_start.nil?
+      puts "No response start: #{output}"
       return nil
     end
-    if isolated_elements.first.empty?
-      puts "No elements: #{output}"
+    if response_end.nil?
+      puts "No response end: #{output}"
       return nil
     end
+    adjusted_response_start = response_start + GRPC_RESPONSE_START_MARKER.length
+    adjusted_response_end = response_end - 1
+    extracted_json = output[adjusted_response_start..adjusted_response_end]
     begin
       # Add back the outside curly brackets are they are removed by the scan operation
-      JSON.parse("{#{isolated_elements.first.last}}}")
+      JSON.parse(extracted_json)
     rescue JSON::ParserError => e
       puts e
       puts "Input: #{output}"

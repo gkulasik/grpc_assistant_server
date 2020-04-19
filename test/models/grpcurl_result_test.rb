@@ -34,13 +34,17 @@ class GrpcurlResultTest < ActiveSupport::TestCase
   test 'parse raw output' do
     result = build(:grpcurl_result_success)
 
+    # Error cases
     assert_nil result.parse_raw_output(nil)
     assert_nil result.parse_raw_output("")
     assert_nil result.parse_raw_output("[\"foo\"]")
     assert_nil result.parse_raw_output("{}")
-    assert_not_nil result.parse_raw_output("{\"test\":{\"foo\":\"bar\"}")
-    expected = {"test" => {"foo" => "bar"}}
-    assert_equal expected, result.parse_raw_output("{\"test\":{\"foo\":\"bar\"}")
+
+    # Success cases
+    expected_one = {"test" => {"foo" => "bar"}}
+    assert_equal expected_one, result.parse_raw_output("foo bar \n #{GrpcurlResult::GRPC_RESPONSE_START_MARKER}\n{\"test\":{\"foo\":\"bar\"}\n}\n#{GrpcurlResult::GRPC_RESPONSE_END_MARKER}")
+    expected_two = {"foo" => "bar",  "bar"  => "foo", "one" => 1}
+    assert_equal expected_two, result.parse_raw_output("#{GrpcurlResult::GRPC_RESPONSE_START_MARKER}{\"foo\":  \n  \"bar\",   \"bar\":\"foo\",\"one\":1}#{GrpcurlResult::GRPC_RESPONSE_END_MARKER}    \n foobar")
   end
 
   test 'to api response - success' do
