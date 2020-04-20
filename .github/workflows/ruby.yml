@@ -27,17 +27,13 @@ jobs:
           ruby-version: 2.6.3
 
       - name: Install PostgreSQL 12 client
-        run: |
-          sudo apt-get -yqq install libpq-dev
+        run: sudo apt-get -yqq install libpq-dev
 
       - name: Build App
         env:
           DATABASE_URL: postgres://postgres:@localhost:5432
           RAILS_ENV: test
-        run: |
-          gem install bundler
-          bundle install --jobs 4 --retry 3
-          bin/rails db:setup
+        run: gem install bundler && bundle install --jobs 4 --retry 3 && bin/rails db:setup
 
       - name: Run Tests
         env:
