@@ -41,12 +41,11 @@ It is important for the service and grpcurl to know where the proto files are. T
 #### Option 1
 Copy proto files/directories into the directory created by git clone. Docker and the service will have access to its directory and any child directories.
 
-## Option 2 (Preferred)
+### Option 2 (Preferred)
 Provide access to directories outside of the service directory via docker compose volumes. This is already partially configured in the docker-compose.yml file.
 
 `
 docker-compose.yml
-
     volumes:
       - ./:/app
       - /Users:/app/Users
@@ -54,6 +53,7 @@ docker-compose.yml
 With the default config (configured for MacOS) the high level /Users directory will be passed to the docker container, passing access to the whole system (not ideal) but is guaranteed to provided access to the protos. 
 
 Example on how to setup a request's options.import_path with the default docker-compose.yml volumes. Assuming the protos are located in foouser's projects directory.
+
 `
 Request body sample:
 "options": {
@@ -61,6 +61,7 @@ Request body sample:
  		"import_path": "Users/foouser/projects/protos/src/",
  		...
  	},...`
+ 	
 This would mean that the protos directory structure starts in the /src directory.  
 
 Ideally, volumes and import_path work so that the command returned in a response will work to be copied and pasted without any edits required of the command.
@@ -78,7 +79,7 @@ There are two primary API endpoints the service provides, `command` and `execute
 
 ### General
 
-Grpcurl tags/attributes supported (mapped GRPC Assistant -> grpcurl tag:
+Grpcurl tags/attributes supported (mapped GRPC Assistant -> grpcurl tag):
 - options.verbose [boolean] => -v
 - options.import_path [string] => -import-path
 - options.service_proto_path [string] => -proto
@@ -92,7 +93,7 @@ Grpcurl tags/attributes supported (mapped GRPC Assistant -> grpcurl tag:
 The command endpoint will generate a grpcurl command based on the inputs. This command can then be copy and pasted into a command line on a local/different machine with grpcurl.
 
 #### Command example request
-`POST localhost:3000/service/command
+```POST localhost:3000/service/command
 Header:  grpc-Authorization: auth-token
 {
 	"options": {
@@ -109,9 +110,10 @@ Header:  grpc-Authorization: auth-token
 		"bar": "test"
 	}
 }
-`
+```
 Equivalent curl:
-`curl --location --request POST 'localhost:3000/service/command' \
+```
+curl --location --request POST 'localhost:3000/service/command' \
  --header 'grpc-Authorization: auth-token' \
  --header 'Content-Type: application/json' \
  --data-raw '{
@@ -128,21 +130,24 @@ Equivalent curl:
  		"foo": 1,
  		"bar": "test"
  	}
- }'` 
+ }'
+``` 
 
 
 #### Command example response
 A ready to copy and paste response (value of the 'command' field) is returned.
-`{
+```
+{
      "command": "grpcurl  -import-path import/src  -proto path/to/proto/service/file/services.proto  -H 'AUTHORIZATION:auth-token'  -v  -d {\"foo\":1,\"bar\":\"test\"}  example.com:443  com.example.proto.example.FooService/ExampleMethod "
- }`
+ }
+```
 
 
 ### Execute
 The execute endpoint will generate a grpcurl command based on inputs and run the command with grpcurl inside of the docker container.
 
 #### Execute example request
-`
+```
 POST localhost:3000/service/execute
 Header: grpc-Authorization: auth-token
 {
@@ -160,10 +165,11 @@ Header: grpc-Authorization: auth-token
 		"bar": "test"
 	}
 }
-`
+```
 
 Equivalent curl:
-`curl --location --request POST 'localhost:3000/service/execute' \
+```
+curl --location --request POST 'localhost:3000/service/execute' \
  --header 'grpc-Authorization: auth-token' \
  --header 'Content-Type: application/json' \
  --data-raw '{
@@ -180,10 +186,12 @@ Equivalent curl:
  		"foo": 1,
  		"bar": "test"
  	}
- }'`
+ }'
+```
+
 #### Execute example response
 Response contains a success indicator, the actual GRPC response (JSON format), the command used for grpcurl, and the full output from grpcurl for debugging.
-`
+```
 {
     "success": true,
     "response": {
@@ -195,7 +203,7 @@ Response contains a success indicator, the actual GRPC response (JSON format), t
     "command": "grpcurl  -import-path import/src  -proto path/to/proto/service/file/services.proto  -H 'AUTHORIZATION:auth-token'  -v  -d {\"foo\":1,\"bar\":\"test\"}  example.com:443  com.example.proto.example.FooService/ExampleMethod ",
     "full_output": "\nResolved method descriptor:\n// some test method ( com.example.proto.example.FooService.ExampleMethod ) returns ( com.example.proto.example.FooService.ExampleResponse );\n\nRequest metadata to send:\nauthorization: auth-token\n\nResponse headers received:\naccess-control-expose-headers: X-REQUEST-UUID\ndate: Mon, 20 Apr 2020 10:11:36 GMT\nserver: apache\nx-envoy-upstream-service-time: 55\nx-request-uuid: 773a276d-8c8e-5158-abcd-ac616a3e921a\n\nResponse contents:\n{\n  \"someObject\": {\n    \"field\": \"value\"\n  }, \"foo\":\"bar\"\n}\n\nResponse trailers received:\ndate: Fri, 10 Apr 2020 19:12:43 GMT\nSent 1 request and received 1 response\n"
 }
-`
+```
 
 ## Credit
 This project wouldn't be possible if not for the great work of grpcurl [https://github.com/fullstorydev/grpcurl].
