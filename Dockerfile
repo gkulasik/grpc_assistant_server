@@ -1,4 +1,4 @@
-FROM ruby:2.5.5
+FROM ruby:2.6.3
 
 # Install/update dependencies
 RUN apt-get update && apt-get install -y golang-go git make musl-dev
