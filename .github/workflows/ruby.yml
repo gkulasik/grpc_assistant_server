@@ -4,7 +4,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     services:
-      db:
+      database:
         image: postgres:12
         ports: ['5432:5432']
 
@@ -19,7 +19,7 @@ jobs:
           cmd: install
       - name: Build and run tests
         env:
-          DATABASE_URL: postgres://postgres:@localhost:5432/test
+          DATABASE_URL: postgres://postgres:@database
           RAILS_ENV: test
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
         run: |
