@@ -40,7 +40,7 @@ It is important for the service and grpcurl to know where the proto files are. T
 #### Option 1
 Copy proto files/directories into the directory created by git clone. Docker and the service will have access to its directory and any child directories.
 
-### Option 2 (Preferred)
+#### Option 2 (Preferred)
 Provide access to directories outside of the service directory via docker compose volumes. This is already partially configured in the docker-compose.yml file.
 
 ```
