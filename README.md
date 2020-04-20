@@ -44,23 +44,25 @@ Copy proto files/directories into the directory created by git clone. Docker and
 ### Option 2 (Preferred)
 Provide access to directories outside of the service directory via docker compose volumes. This is already partially configured in the docker-compose.yml file.
 
-`
+```
 docker-compose.yml
     volumes:
       - ./:/app
       - /Users:/app/Users
-`
+```
+
 With the default config (configured for MacOS) the high level /Users directory will be passed to the docker container, passing access to the whole system (not ideal) but is guaranteed to provided access to the protos. 
 
 Example on how to setup a request's options.import_path with the default docker-compose.yml volumes. Assuming the protos are located in foouser's projects directory.
 
-`
+```
 Request body sample:
 "options": {
         ...
  		"import_path": "Users/foouser/projects/protos/src/",
  		...
- 	},...`
+ 	},...
+```
  	
 This would mean that the protos directory structure starts in the /src directory.  
 
@@ -93,7 +95,8 @@ Grpcurl tags/attributes supported (mapped GRPC Assistant -> grpcurl tag):
 The command endpoint will generate a grpcurl command based on the inputs. This command can then be copy and pasted into a command line on a local/different machine with grpcurl.
 
 #### Command example request
-```POST localhost:3000/service/command
+```
+POST localhost:3000/service/command
 Header:  grpc-Authorization: auth-token
 {
 	"options": {
@@ -139,7 +142,7 @@ A ready to copy and paste response (value of the 'command' field) is returned.
 ```
 {
      "command": "grpcurl  -import-path import/src  -proto path/to/proto/service/file/services.proto  -H 'AUTHORIZATION:auth-token'  -v  -d {\"foo\":1,\"bar\":\"test\"}  example.com:443  com.example.proto.example.FooService/ExampleMethod "
- }
+}
 ```
 
 
