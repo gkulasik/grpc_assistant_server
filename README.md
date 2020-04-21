@@ -98,7 +98,7 @@ Grpcurl tags/attributes supported (mapped GRPC Assistant -> grpcurl tag):
 - service_name [string] => symbol
 - method_name [string] => symbol
 - data [object] => -d
-- HTTP headers [Map] => -H
+- HTTP headers [map] => -H
 
 To pass in headers (grpcurl -H tag) regular HTTP headers may be used. The service will look for 'GRPC' intended headers which are any HTTP headers prefixed with 'HTTP_GRPC_{your header name}'. The 'HTTP_GRPC_' prefix will be removed during processing.
 
@@ -223,7 +223,7 @@ Success is indicated via the HTTP status code 200.
 
 ### Command Used ### 
 
-grpcurl  -import-path import/src  -proto path/to/proto/service/file/services.proto  -H 'AUTHORIZATION:auth-token'  -v  -d '{\"foo\":1,\"bar\":\"test\"}'  example.com:443  com.example.proto.example.FooService/ExampleMethod 
+grpcurl  -import-path import/src  -proto path/to/proto/service/file/services.proto  -H 'AUTHORIZATION:auth-token'  -v  -d '{"foo":1,"bar":"test"}'  example.com:443  com.example.proto.example.FooService/ExampleMethod 
 
 ### Full Response ### 
 
@@ -267,7 +267,7 @@ Error invoking method \"com.example.proto.FooService/FakeMethod\": service \"com
 
 ### Command Used ###
 
-grpcurl  -import-path Users/myuser/projects/proto/src/  -proto example/proto/foo/service_api.proto  -H 'AUTHORIZATION:auth-token'  -v  -d '{\"foo\":\"bar\"}'  example.com:443  com.example.proto.FooService/FakeMethod
+grpcurl  -import-path Users/myuser/projects/proto/src/  -proto example/proto/foo/service_api.proto  -H 'AUTHORIZATION:auth-token'  -v  -d '{"foo":"bar"}'  example.com:443  com.example.proto.FooService/FakeMethod
 ```
 
 ## Credit
