@@ -1,4 +1,4 @@
-# GRPC Server Assistant
+# GRPC Assistant Server (GAS)
 
 ## About
 This project was born out of a need to be more efficient in working with GRPC. Though very powerful and full of benefits, few tools work well for development and testing against GRPC servers. 
@@ -9,7 +9,7 @@ One tool I consistently use is grpcurl [https://github.com/fullstorydev/grpcurl]
 
 We already have great development tools for HTTP requests like curl and Postman [https://www.postman.com/] so I thought about why not use them to create and format our GRPC requests.
 
-This tool is best used with Postman due to its great UI and support for variables, environments, and programmability.
+This tool is intended to be used with Postman due to its great UI and support for variables, environments, and programmability.
 
 ### Build
 The service uses Rails 6 API and grpcurl under the hood. Rails was chosen due to its quick development time and ability to expand if more functionality is desired.
@@ -18,25 +18,25 @@ The current setup uses Docker and Docker Compose to launch the service locally r
 
 ##  Setup
 
-Download the code via git clone: `git clone https://github.com/gkulasik/grpc_server_assistant.git`
+Download the code via git clone: `git clone https://github.com/gkulasik/grpc_assistant_server.git`
 
-This will create a new directory called grpc_server_assistant with all the necessary files. 
+This will create a new directory called grpc_assistant_server with all the necessary files. 
 
 ### Start the service
 
-`./start_grpc_assistant.sh`
+`./start_grpc_assistant_server.sh`
 
 Will start the Rails server, Postgres DB, and run migrations. Access from localhost:3000 by default.
 
 ### Stop the service
 
-`./stop_grpc_assistant.sh`
+`./stop_grpc_assistant_server.sh`
 
 Will shutdown and remove the server and DB containers.
 
 ### Update the service
 
-`./update_grpc_assistant.sh`
+`./update_grpc_assistant_server.sh`
 
 Will stop the service, git pull the latest changes, and rebuild the docker container.
 
@@ -89,7 +89,7 @@ There are two primary API endpoints the service provides, `command` and `execute
 
 server_address, service_name, method_name are all required fields in either request.
 
-Grpcurl tags/attributes supported (mapped GRPC Assistant -> grpcurl tag):
+Grpcurl tags/attributes supported (mapped GAS -> grpcurl tag):
 - options.verbose [boolean] => -v
 - options.import_path [string] => -import-path
 - options.service_proto_path [string] => -proto

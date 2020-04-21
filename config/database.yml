@@ -24,13 +24,13 @@ default: &default
 
 development:
   <<: *default
-  database: grpc_http_helper_development
+  database: grpc_assistant_server_development
 
   # The specified database role being used to connect to postgres.
   # To create additional roles in postgres see `$ createuser --help`.
   # When left blank, postgres will use the default role. This is
   # the same name as the operating system user that initialized the database.
-  #username: grpc_http_helper
+  #username: grpc_assistant_server
 
   # The password associated with the postgres role (username).
   #password:
@@ -58,7 +58,7 @@ development:
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: grpc_http_helper_test
+  database: grpc_assistant_server_test
 
 # As with config/credentials.yml, you never want to store sensitive information,
 # like your database password, in your source code. If your source code is
@@ -81,6 +81,6 @@ test:
 #
 production:
   <<: *default
-  database: grpc_http_helper_production
-  username: grpc_http_helper
-  password: <%= ENV['GRPC_HTTP_HELPER_DATABASE_PASSWORD'] %>
+  database: grpc_assistant_server_production
+  username: grpc_assistant_server
+  password: <%= ENV['GRPC_ASSISTANT_SERVER_DATABASE_PASSWORD'] %>
