@@ -8,6 +8,11 @@ class GrpcurlResult
   GRPC_RESPONSE_START_MARKER = 'Response contents:'
   GRPC_RESPONSE_END_MARKER = 'Response trailers received:'
 
+  RESPONSE_PARSED_HEADER = '### Parsed Response ###'
+  ERROR_HEADER = '### Error ###'
+  FULL_RESPONSE_HEADER = '### Full Response ###'
+  COMMAND_HEADER = '### Command Used ###'
+
   # Init with hash - accepted params:
   # @param [String] command
   # @param [String] raw_output
@@ -22,7 +27,7 @@ class GrpcurlResult
 
   # Helper to get the response/parse again if for some reason initialize did not parse the output the first time.
   # Used due to FactoryBot not initializing the GrpcResult properly.
-  # @return [Hash]
+  # @return [String]
   def get_response
     if @clean_response.nil? && !@raw_errors.present?
       parse_raw_output(@raw_output)
@@ -38,7 +43,7 @@ class GrpcurlResult
   end
 
   # @param [String] output
-  # @return [Hash] return contents of grpc response (JSON format)
+  # @return [String] return contents of grpc response extracted from full response
   def parse_raw_output(output)
     if output.nil?
       puts "Nil input"
@@ -57,24 +62,16 @@ class GrpcurlResult
     end
     adjusted_response_start = response_start + GRPC_RESPONSE_START_MARKER.length
     adjusted_response_end = response_end - 1
-    extracted_json = output[adjusted_response_start..adjusted_response_end]
-    begin
-      # Add back the outside curly brackets are they are removed by the scan operation
-      JSON.parse(extracted_json)
-    rescue JSON::ParserError => e
-      puts e
-      puts "Input: #{output}"
-      return nil
-    end
+    output[adjusted_response_start..adjusted_response_end]
   end
 
   # Convert GrpcResult into an API response with relevant information
-  # @return [Hash]
+  # @return [String]
   def to_api_response
-    if is_success?
-      { success: true, response: get_response, command: @command, full_output: @raw_output }
-    else
-      { success: false, errors: @raw_errors, command: @command }
-    end
+    response = is_success? ? "#{RESPONSE_PARSED_HEADER} \n#{get_response}" : ""
+    errors = is_success? ? "" : "#{ERROR_HEADER}\n\n#{@raw_errors}"
+    full_response = is_success? ? "#{FULL_RESPONSE_HEADER}\n#{@raw_output}" : ""
+    command = "\n"+ "#{COMMAND_HEADER}\n\n#{@command}" + "\n\n"
+    response + errors +  command + full_response
   end
 end

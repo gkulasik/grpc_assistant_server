@@ -54,9 +54,8 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
          }
 
     assert_response :success
-    json_response = JSON.parse(@response.body)
-    expected_response = "grpcurl  -import-path /import/path  -proto some/example/examples.proto  -H 'AUTHORIZATION:auth-token'  -plaintext  -v  -d {\"field_one\":\"1\",\"field_two\":\"two\",\"field_three\":\"true\"}  example.com:443  com.example.proto.ExampleService/ExampleMethod "
-    assert_equal expected_response, json_response["command"]
+    expected_response = "grpcurl  -import-path /import/path  -proto some/example/examples.proto  -H 'AUTHORIZATION:auth-token'  -plaintext  -v  -d '{\"field_one\":\"1\",\"field_two\":\"two\",\"field_three\":\"true\"}'  example.com:443  com.example.proto.ExampleService/ExampleMethod "
+    assert_equal expected_response, @response.body
   end
 
   test "command - should fail with incorrect call" do
@@ -85,12 +84,12 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
            params: DEFAULT_SUCCESS_PARAMS
 
       assert_response :success
-      json_response = JSON.parse(@response.body)
-      assert json_response["success"]
-      assert_equal SUCCESS_MOCK_COMMAND, json_response["command"]
-      assert_equal SUCCESS_MOCK_RESPONSE, json_response["full_output"]
-      expected_response = {"exampleResponse"=>{"foo"=>"BAR"}}
-      assert_equal expected_response, json_response["response"]
+      expected_response = "{\"exampleResponse\":{\"foo\":\"BAR\"}}"
+      assert @response.body.include?(GrpcurlResult::RESPONSE_PARSED_HEADER), 'Response is missing the parsed response header'
+      assert_not @response.body.include?(GrpcurlResult::ERROR_HEADER), 'Response contains the error header'
+      assert @response.body.gsub(/\s+/, "").include?(expected_response), 'Response did not contain the parsed response'
+      assert @response.body.include?(SUCCESS_MOCK_COMMAND), 'Response did not contain the command used'
+      assert @response.body.include?(SUCCESS_MOCK_RESPONSE), 'Response did not contain the full output'
     end
 
     assert_mock executor_mock
@@ -108,10 +107,10 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
            params: DEFAULT_SUCCESS_PARAMS
 
       assert_response :bad_request
-      json_response = JSON.parse(@response.body)
-      assert_not json_response["success"]
-      assert_equal error_string, json_response["errors"]
-      assert_equal SUCCESS_MOCK_COMMAND, json_response["command"]
+      assert_not @response.body.include?(GrpcurlResult::RESPONSE_PARSED_HEADER), 'Response contains the parsed response header when it should not'
+      assert @response.body.include?(GrpcurlResult::ERROR_HEADER), 'Response did not contain the error header (should have been a failed request)'
+      assert @response.body.include?(error_string), 'Response did not contain the expected error text'
+      assert @response.body.include?(SUCCESS_MOCK_COMMAND), 'Response did not contain the command used'
     end
 
     assert_mock executor_mock

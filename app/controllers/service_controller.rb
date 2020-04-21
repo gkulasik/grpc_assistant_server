@@ -13,7 +13,7 @@ class ServiceController < ApplicationController
     if builder.valid?
       result = GrpcurlExecutor.execute(builder)
       status = result.is_success? ? :ok : :bad_request
-      render json: result.to_api_response, status: status
+      render plain: result.to_api_response, status: status
     else
       render json: { errors: builder.errors }, status: :bad_request
     end
@@ -26,7 +26,7 @@ class ServiceController < ApplicationController
     headers = get_grpc_headers(request.headers)
     builder = GrpcurlBuilder.from_params(headers, service_params.to_hash)
     if builder.valid?
-      render json: { command: builder.build }, status: :ok
+      render plain: builder.build, status: :ok
     else
       render json: { errors: builder.errors }, status: :bad_request
     end
@@ -45,11 +45,12 @@ class ServiceController < ApplicationController
   # @return [ActionController::Parameters]
   def service_params
     allowed_params = params.permit(:options,
-                  :server_address,
-                  :service_name,
-                  :method_name,
-                  :data,
-                  options: [:verbose, :import_path, :service_proto_path, :insecure])
+                                   :service,
+                                   :server_address,
+                                   :service_name,
+                                   :method_name,
+                                   :data,
+                                   options: [:verbose, :import_path, :service_proto_path, :insecure])
     allowed_params[:data] = params[:data]
     allowed_params.permit!
   end

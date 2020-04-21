@@ -66,43 +66,43 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
   test "should handle import path" do
     # Option present
     builder = build(:grpcurl_builder,  import_path: 'foobar')
-    expected = "grpcurl  -import-path foobar  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -import-path foobar  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build,DEFAULT_PRESENT_ERROR
 
     # Option omitted
     builder = build(:grpcurl_builder,  import_path: nil)
-    expected = "grpcurl  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
   end
 
   test "should handle service_proto_path path" do
     # Option present
     builder = build(:grpcurl_builder,  service_proto_path: 'foobar')
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto foobar  -plaintext  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto foobar  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build,DEFAULT_PRESENT_ERROR
 
     # Option omitted
     builder = build(:grpcurl_builder,  service_proto_path: nil)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -plaintext  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
   end
 
   test "should handle insecure flag" do
     # Option present
     builder = build(:grpcurl_builder,  insecure: true)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build,DEFAULT_PRESENT_ERROR
 
     # Option omitted
     builder = build(:grpcurl_builder,  insecure: false)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
   end
 
   test "should handle data" do
     # Option present
     builder = build(:grpcurl_builder,  data: DEFAULT_DATA)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
 
     # Option omitted
@@ -114,12 +114,12 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
   test "should handle server address" do
     # Option present
     builder = build(:grpcurl_builder,  server_address: DEFAULT_SERVER_ADDRESS)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  #{DEFAULT_SERVER_ADDRESS}  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  #{DEFAULT_SERVER_ADDRESS}  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
 
     # Option omitted
     builder = build(:grpcurl_builder,  server_address: nil)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
   end
 
@@ -137,12 +137,12 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
   test "should handle service name" do
     # Option present
     builder = build(:grpcurl_builder,  service_name: DEFAULT_SERVICE_NAME)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  example.com:443  #{DEFAULT_SERVICE_NAME}/ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  #{DEFAULT_SERVICE_NAME}/ExampleMethod "
     assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
 
     # Option omitted
     builder = build(:grpcurl_builder,  service_name: nil)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  example.com:443 /ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443 /ExampleMethod "
     assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
   end
 
@@ -160,12 +160,12 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
   test "should handle method name" do
     # Option present
     builder = build(:grpcurl_builder,  method_name: DEFAULT_METHOD_NAME)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService/#{DEFAULT_METHOD_NAME} "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/#{DEFAULT_METHOD_NAME} "
     assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
 
     # Option omitted
     builder = build(:grpcurl_builder,  method_name: nil)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService"
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService"
     assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
   end
 
@@ -183,12 +183,12 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
   test "should handle headers" do
     # Option present
     builder = build(:grpcurl_builder,  headers: DEFAULT_HEADERS)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -H 'Authorization:auth-token'  -plaintext  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -H 'Authorization:auth-token'  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build,DEFAULT_PRESENT_ERROR
 
     # Option omitted
     builder = build(:grpcurl_builder,  headers: nil)
-    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d {\"test\":\"json data\"}  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
   end
 

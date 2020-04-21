@@ -64,9 +64,8 @@ class GrpcurlBuilder
   end
 
   # Builds the grpcurl command
-  # @param [Boolean] to_execute - handle the fact that escaping makes the command and execute different
   # @return [String]
-  def build(to_execute = false)
+  def build()
     grpcurl = "grpcurl "
     # Tags
     grpcurl = add_import_path(grpcurl)
@@ -74,7 +73,7 @@ class GrpcurlBuilder
     grpcurl = add_headers(grpcurl)
     grpcurl = add_insecure(grpcurl)
     grpcurl = add_verbose(grpcurl)
-    grpcurl = add_data(grpcurl, to_execute)
+    grpcurl = add_data(grpcurl)
     # Address
     grpcurl = add_server_address(grpcurl)
     # Symbol (service call)
@@ -108,14 +107,9 @@ class GrpcurlBuilder
     add_if_present(@service_proto_path, current_string, " -proto #{@service_proto_path} ")
   end
 
-  # Adds data to grpcurl command
-  # This required an extra flag because if we are executing the command we need to leave in the \" but
-  # when we are copying and pasting the command to run manually or reproduce we need to have that left out else on
-  # print it will show up as \\\" instead of \"
-  def add_data(current_string, to_execute)
-    json_data = @data.to_json
-    formatted_data = to_execute ? json_data.gsub("\"", "\\\"") : json_data
-    add_if_present(@data, current_string, " -d #{formatted_data} ")
+  # Adds data to grpcurl command (-d)
+  def add_data(current_string)
+    add_if_present(@data, current_string, " -d '#{@data.to_json}' ")
   end
 
   # Adds -v tag to grpcurl command
