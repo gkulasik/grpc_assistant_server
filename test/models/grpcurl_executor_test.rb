@@ -3,7 +3,7 @@ require 'open3'
 class GrpcurlExecutorTest < ActiveSupport::TestCase
 
   # Tedious workaround test to ensure the proper methods are being called by this method
-  test "Executor should make appropriate calls" do
+  test "executor should make appropriate calls" do
     # Mimic Open3 syntax
     module TestOpen3
       def popen3(*cmd, **opts, &block)

@@ -1,18 +1,22 @@
 # GRPC Assistant Server (GAS)
 
-## About
-This project was born out of a need to be more efficient in working with GRPC. Though very powerful and full of benefits, few tools work well for development and testing against GRPC servers. 
+## What it is:
+Dockerized HTTP/JSON proxy server for local GRPC development leveraging grpcurl [https://github.com/fullstorydev/grpcurl].
 
-Various GRPC tools require special syntax, lacked features, and sometimes don't work as expected. These tools are extremely appreciated and I know take personal time to maintain but coming from tools like Postman it makes it difficult to keep a similar development efficiency.
+## What it can do
+- Generate valid, ready to copy and paste, grpcurl commands from a request using JSON.
+- Execute and parse grpc commands within a docker container and return a formatted response.
 
-One tool I consistently use is grpcurl [https://github.com/fullstorydev/grpcurl] and find it to be extremely usable and  reliable. Though, on account of it being a command-line utility, it suffers the same issues as regular curl [https://curl.haxx.se/] such as the tedious typing of JSON request bodies.
+##  What are the benefits?
+- Free choice of UI (choose your http client such as Postman, Paw, etc.) and all the features they support such as saving requests, variables, and testing.
+- Minimal setup required due to being fully dockerized (server and grpcurl).
+- Craft GRPC request bodies and view responses in JSON format.
+- Leverage a trusted base with grpcurl. Easily works with grpc servers, no tls or server compatibility issues like other grpc tools may have.
+- Requests are easily portable and transferable due to the text based nature of grpcurl or equivalent curl.
+- No changes are required to existing proto files or servers like some other grpc tools.
 
-We already have great development tools for HTTP requests like curl and Postman [https://www.postman.com/] so I thought about why not use them to create and format our GRPC requests.
-
-This tool is intended to be used with Postman due to its great UI and support for variables, environments, and programmability.
-
-### Build
-The service uses Rails 6 API and grpcurl under the hood. Rails was chosen due to its quick development time and ability to expand if more functionality is desired.
+## How is it built
+The service uses Rails 6 API and grpcurl inside of a docker container. A second container containing a database is generated but currently is unused.
 
 The current setup uses Docker and Docker Compose to launch the service locally requiring no environment setup.
 
@@ -26,7 +30,7 @@ This will create a new directory called grpc_assistant_server with all the neces
 
 `./start_grpc_assistant_server.sh`
 
-Will start the Rails server, Postgres DB, and run migrations. Access from localhost:3000 by default.
+Will start the Rails server, Postgres DB, and run migrations. Access from localhost:3000 by default. On first run the docker containers will be built.
 
 ### Stop the service
 
@@ -41,10 +45,10 @@ Will shutdown and remove the server and DB containers.
 Will stop the service, git pull the latest changes, and rebuild the docker container.
 
 ### Set the protos source
-The service and grpcurl need to know where the proto files are. The docker container **cannot** see files outside of its local directory. There are two options to the service with access to local proto files. Getting the protos config right is the most difficult part to ensure the command and execute endpoints work correctly.
+The service and grpcurl need to know where the proto files are. The docker container **cannot** see files outside of its local directory. There are two options to provide the service with access to local proto files. Getting the protos config right is the most important part to ensure the service works correctly.
 
 #### Option 1
-Copy proto files/directories into the directory created by git clone. Docker and the service will have access to its directory and any child directories.
+Copy proto files/directories into the directory created by git clone. Docker and the service will have access to its directory and any child directories. grpcurl commands will only work within the service directory from the command line due to the proto file paths being part of the command.
 
 #### Option 2 (Preferred)
 Provide access to directories outside of the service directory via docker-compose volumes. This is already partially configured in the docker-compose.yml file.
@@ -56,7 +60,9 @@ docker-compose.yml
       - /Users:/app/Users
 ```
 
-With the default config (configured for macOS) the /Users directory will be passed to the docker container, passing access to nearly the whole system and should provide access to the protos. While not ideal, this solution works, more granularity is possible for those who choose to tinker with the volumes and related request body options.import_path.
+With the default config (configured for macOS) the /Users directory will be passed to the docker container, passing access to nearly the whole system including the protos. More granularity is possible for those who choose to tinker with the volumes and related request body options.import_path. 
+
+grpcurl commands will work from the top level `/` directory on macOS using the default config.
 
 Example of how to set up a request's options.import_path with the default docker-compose.yml volumes. Assuming the protos are located in foouser's projects directory.
 
@@ -72,7 +78,7 @@ Request body sample:
  	
 This would mean that the protos directory structure starts in the /src directory.  
 
-Ideally, volumes and import_path work so that the command returned in a response will work to be copied and pasted without any edits required to the command.
+Ideally, volumes and import_path work so that the command returned in a response will work to be copied and pasted without any edits required to the command. 
 
 ## Config
 
@@ -87,7 +93,7 @@ There are two primary API endpoints the service provides, `command` and `execute
 
 ### General
 
-server_address, service_name, method_name are all required fields in either request.
+server_address, service_name, method_name are all required fields for either request.
 
 Grpcurl tags/attributes supported (mapped GAS -> grpcurl tag):
 - options.verbose [boolean] => -v
@@ -160,7 +166,7 @@ grpcurl  -import-path import/src  -proto path/to/proto/service/file/services.pro
 
 
 ### Execute
-The execute endpoint will generate a grpcurl command based on inputs and **execute the command** with grpcurl inside of the docker container.
+The execute endpoint will generate a grpcurl command based on inputs and **execute the command** using grpcurl inside of the docker container.
 
 #### Execute example request
 ```
@@ -206,7 +212,7 @@ curl --location --request POST 'localhost:3000/service/execute' \
 ```
 
 #### Execute example response success
-Response contains the parsed response (from the full output at the bottom), the command used (ready to copy and paste), and the full output of the command for additional debugging. This is all returned as plain text to allow for proper string escaping.
+Response contains the parsed response (extracted from the full output below), the command used (ready to copy and paste), and the full output of the command for additional debugging. This is all returned as plain text to allow for proper string escaping.
 
 Success is indicated via the HTTP status code 200.
 

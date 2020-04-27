@@ -87,6 +87,7 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
       expected_response = "{\"exampleResponse\":{\"foo\":\"BAR\"}}"
       assert @response.body.include?(GrpcurlResult::RESPONSE_PARSED_HEADER), 'Response is missing the parsed response header'
       assert_not @response.body.include?(GrpcurlResult::ERROR_HEADER), 'Response contains the error header'
+      # For reliability remove formatting white space
       assert @response.body.gsub(/\s+/, "").include?(expected_response), 'Response did not contain the parsed response'
       assert @response.body.include?(SUCCESS_MOCK_COMMAND), 'Response did not contain the command used'
       assert @response.body.include?(SUCCESS_MOCK_RESPONSE), 'Response did not contain the full output'

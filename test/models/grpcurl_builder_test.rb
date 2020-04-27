@@ -186,6 +186,12 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -H 'Authorization:auth-token'  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build,DEFAULT_PRESENT_ERROR
 
+    # Option present - multiple headers
+    # Header order should be retained - if this assumption changes we can simply adjust this assertion to check for both headers being present
+    builder = build(:grpcurl_builder,  headers: { "Authorization" => "auth-token", "OtherHeader" => "FooBar"})
+    expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -H 'Authorization:auth-token'  -H 'OtherHeader:FooBar'  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    assert_equal expected, builder.build,DEFAULT_PRESENT_ERROR
+
     # Option omitted
     builder = build(:grpcurl_builder,  headers: nil)
     expected = "grpcurl  -import-path /path/to/importable/protos  -proto /path/to/main/service/proto/file.proto  -plaintext  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "

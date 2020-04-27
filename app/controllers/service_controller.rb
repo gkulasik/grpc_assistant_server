@@ -6,8 +6,6 @@ class ServiceController < ApplicationController
   # Route: service_execute
   # Path: POST /service/execute
   def execute
-    # update tests
-    # figure out how to get grpcurl into docker and link protos to it
     headers = get_grpc_headers(request.headers)
     builder = GrpcurlBuilder.from_params(headers, service_params.to_hash)
     if builder.valid?

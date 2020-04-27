@@ -28,7 +28,6 @@ class GrpcurlBuilder
   # @return [GrpcurlBuilder]
   def self.from_params(headers, params)
     options = params["options"] || {}
-    data = params["data"]
     build_params = {
         import_path: options["import_path"],
         service_proto_path: options["service_proto_path"],
@@ -37,7 +36,7 @@ class GrpcurlBuilder
         server_address: params["server_address"],
         service_name: params["service_name"],
         method_name: params["method_name"],
-        data: data,
+        data:  params["data"],
         headers: headers || Hash.new }
     GrpcurlBuilder.new(build_params)
   end
