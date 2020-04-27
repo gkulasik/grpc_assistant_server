@@ -20,6 +20,8 @@ The service uses Rails 6 API and grpcurl inside of a docker container. A second 
 
 The current setup uses Docker and Docker Compose to launch the service locally requiring no environment setup.
 
+Prebuilt containers at Docker Hub (Still requires that the git repo is pulled): https://hub.docker.com/repository/docker/gkulasik/grpc-assistant-server
+
 ##  Setup
 
 Download the code via git clone: `git clone https://github.com/gkulasik/grpc_assistant_server.git`
@@ -30,7 +32,7 @@ This will create a new directory called grpc_assistant_server with all the neces
 
 `./start_grpc_assistant_server.sh`
 
-Will start the Rails server, Postgres DB, and run migrations. Access from localhost:3000 by default. On first run the docker containers will be built.
+Will start the Rails server, Postgres DB, and run migrations. Access from localhost:3000 by default. On first run the docker containers will be pulled.
 
 ### Stop the service
 
@@ -42,7 +44,7 @@ Will shutdown and remove the server and DB containers.
 
 `./update_grpc_assistant_server.sh`
 
-Will stop the service, git pull the latest changes, and rebuild the docker container.
+Will stop the service, git pull the latest changes, and repull the docker container.
 
 ### Set the protos source
 The service and grpcurl need to know where the proto files are. The docker container **cannot** see files outside of its local directory. There are two options to provide the service with access to local proto files. Getting the protos config right is the most important part to ensure the service works correctly.
@@ -80,13 +82,27 @@ This would mean that the protos directory structure starts in the /src directory
 
 Ideally, volumes and import_path work so that the command returned in a response will work to be copied and pasted without any edits required to the command. 
 
-## Config
+## Configuration
 
 The primary config is handled in the **docker-compose.yml** file.
 
 - The port that the server runs at can be adjusted if you are using port 3000 for other development or services. If changing the port be sure to adjust both the command and ports config.
 - The volumes section needs to be adjusted to allow for the protos to be discovered via Docker volumes. See above in 'Set the protos source' on how to set this up.
 - All other applicable docker-compose changes are available but shouldn't be necessary for general usage.
+
+### Building the container locally
+
+The docker containers can be built rather then pulled after git pull by editing the docker-compose.yml file.
+
+Remove `image: gkulasik/grpc-assistant-server...` under `web` and replace with:
+
+```
+ build:
+       context: .
+       dockerfile: Dockerfile
+```
+
+Avoid using the update script as it will attempt to pull the container.
 
 ## Usage
 There are two primary API endpoints the service provides, `command` and `execute`.
