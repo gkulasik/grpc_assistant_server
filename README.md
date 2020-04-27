@@ -20,7 +20,7 @@ The service uses Rails 6 API and grpcurl inside of a docker container. A second 
 
 The current setup uses Docker and Docker Compose to launch the service locally requiring no environment setup.
 
-Prebuilt containers at Docker Hub (Still requires that the git repo is pulled): https://hub.docker.com/repository/docker/gkulasik/grpc-assistant-server
+Prebuilt containers at Docker Hub (Still requires that the git repo is pulled): https://hub.docker.com/repository/docker/gkulasik/grpc_assistant_server
 
 ##  Setup
 
@@ -94,7 +94,7 @@ The primary config is handled in the **docker-compose.yml** file.
 
 The docker containers can be built rather then pulled after git pull by editing the docker-compose.yml file.
 
-Remove `image: gkulasik/grpc-assistant-server...` under `web` and replace with:
+Remove `image: gkulasik/grpc_assistant_server...` under `web` and replace with:
 
 ```
  build:
