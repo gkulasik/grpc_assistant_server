@@ -54,7 +54,7 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
          }
 
     assert_response :success
-    expected_response = "grpcurl  -import-path /import/path  -proto some/example/examples.proto  -H 'AUTHORIZATION:auth-token'  -plaintext  -v  -d '{\"field_one\":\"1\",\"field_two\":\"two\",\"field_three\":\"true\"}'  example.com:443  com.example.proto.ExampleService/ExampleMethod "
+    expected_response = "grpcurl  -import-path '/import/path'  -proto 'some/example/examples.proto'  -H 'AUTHORIZATION:auth-token'  -plaintext  -v  -d '{\"field_one\":\"1\",\"field_two\":\"two\",\"field_three\":\"true\"}'  example.com:443  com.example.proto.ExampleService/ExampleMethod "
     assert_equal expected_response, @response.body
   end
 
