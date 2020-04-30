@@ -15,7 +15,10 @@ class GrpcurlExecutor
       errors = stderr.read
       puts "Output received: #{output}"
       puts "Errors received: #{errors}"
-     GrpcurlResult.new({command: command, raw_output: output, raw_errors: errors})
+      GrpcurlResult.new(params = { command: command,
+                                   raw_output: output,
+                                   raw_errors: errors,
+                                   hints: grpcurl_builder.hints })
     end
   end
 

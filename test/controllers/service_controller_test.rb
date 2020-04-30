@@ -75,7 +75,7 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
 
   test 'execute - should handle success response' do
     executor_mock = MiniTest::Mock.new
-    executor_mock.expect :call, GrpcurlResult.new({command: SUCCESS_MOCK_COMMAND, raw_output: SUCCESS_MOCK_RESPONSE, raw_errors: ""}), [GrpcurlBuilder]
+    executor_mock.expect :call, GrpcurlResult.new({command: SUCCESS_MOCK_COMMAND, raw_output: SUCCESS_MOCK_RESPONSE, raw_errors: "", hints: ["foo-hint1", "foo-hint2"]}), [GrpcurlBuilder]
 
     GrpcurlExecutor.stub :execute, executor_mock do
       post service_execute_path,
@@ -87,10 +87,13 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
       expected_response = "{\"exampleResponse\":{\"foo\":\"BAR\"}}"
       assert @response.body.include?(GrpcurlResult::RESPONSE_PARSED_HEADER), 'Response is missing the parsed response header'
       assert_not @response.body.include?(GrpcurlResult::ERROR_HEADER), 'Response contains the error header'
+      assert @response.body.include?(GrpcurlResult::HINTS_HEADER), 'Response is missing the hints header'
       # For reliability remove formatting white space
       assert @response.body.gsub(/\s+/, "").include?(expected_response), 'Response did not contain the parsed response'
       assert @response.body.include?(SUCCESS_MOCK_COMMAND), 'Response did not contain the command used'
       assert @response.body.include?(SUCCESS_MOCK_RESPONSE), 'Response did not contain the full output'
+      assert @response.body.include?("- foo-hint1"), 'Response is missing a hint'
+      assert @response.body.include?("- foo-hint2"), 'Response is missing a hint'
     end
 
     assert_mock executor_mock
@@ -99,7 +102,7 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
   test 'execute - should handle failure response' do
     error_string = "Test-Error"
     executor_mock = MiniTest::Mock.new
-    executor_mock.expect :call, GrpcurlResult.new({command: SUCCESS_MOCK_COMMAND, raw_output: "", raw_errors: error_string}), [GrpcurlBuilder]
+    executor_mock.expect :call, GrpcurlResult.new({command: SUCCESS_MOCK_COMMAND, raw_output: "", raw_errors: error_string, hints: ['foo-error-hint']}), [GrpcurlBuilder]
 
     GrpcurlExecutor.stub :execute, executor_mock do
       post service_execute_path,
@@ -110,8 +113,10 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
       assert_response :bad_request
       assert_not @response.body.include?(GrpcurlResult::RESPONSE_PARSED_HEADER), 'Response contains the parsed response header when it should not'
       assert @response.body.include?(GrpcurlResult::ERROR_HEADER), 'Response did not contain the error header (should have been a failed request)'
+      assert @response.body.include?(GrpcurlResult::HINTS_HEADER), 'Response is missing the hints header'
       assert @response.body.include?(error_string), 'Response did not contain the expected error text'
       assert @response.body.include?(SUCCESS_MOCK_COMMAND), 'Response did not contain the command used'
+      assert @response.body.include?("- foo-error-hint"), 'Response is missing a hint'
     end
 
     assert_mock executor_mock

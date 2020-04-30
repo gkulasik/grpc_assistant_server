@@ -173,8 +173,10 @@ class GrpcurlBuilder
   # Can be returned in the response, logs the hint as well
   # @param [String] hint - to add to hints
   def log_hint(hint)
-    puts "HINT: #{hint}"
-    @hints << hint
+    unless @hints.include?(hint)
+      puts "HINT: #{hint}"
+      @hints << hint
+    end
   end
 
 end

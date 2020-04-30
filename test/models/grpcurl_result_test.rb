@@ -61,13 +61,17 @@ class GrpcurlResultTest < ActiveSupport::TestCase
 
         Response trailers received:
         "
-    result = build(:grpcurl_result_success, raw_output: min_success_response_string)
-    assert result.to_api_response.include?("### Parsed Response ###")
-    assert result.to_api_response.include?("\"foo\": \"BAR\"")
-    assert result.to_api_response.include?("### Command Used ###")
-    assert result.to_api_response.include?("test-command")
-    assert result.to_api_response.include?("### Full Response ###")
-    assert result.to_api_response.include?("Response contents:")
+    result = build(:grpcurl_result_success, raw_output: min_success_response_string, hints: ["foo-hint"])
+    result_api_response = result.to_api_response
+    assert result_api_response.include?("### Parsed Response ###"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("\"foo\": \"BAR\""), "Got response: #{result_api_response}"
+    assert result_api_response.include?("### Command Used ###"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("test-command"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("\"foo\": \"BAR\""), "Got response: #{result_api_response}"
+    assert result_api_response.include?("### Hints ###"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("- foo-hint"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("### Full Response ###"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("Response contents:"), "Got response: #{result_api_response}"
   end
 
   test 'to api response - failure' do
