@@ -75,7 +75,7 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
 
   test 'execute - should handle success response' do
     executor_mock = MiniTest::Mock.new
-    executor_mock.expect :call, GrpcurlResult.new({command: SUCCESS_MOCK_COMMAND, raw_output: SUCCESS_MOCK_RESPONSE, raw_errors: "", hints: ["foo-hint1", "foo-hint2"]}), [GrpcurlBuilder]
+    executor_mock.expect :call, GrpcurlResult.new({ command: SUCCESS_MOCK_COMMAND, raw_output: SUCCESS_MOCK_RESPONSE, raw_errors: "", hints: ["foo-hint1", "foo-hint2"] }), [GrpcurlBuilder]
 
     GrpcurlExecutor.stub :execute, executor_mock do
       post service_execute_path,
@@ -99,10 +99,28 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
     assert_mock executor_mock
   end
 
+  # Should be able to use as: :json here instead of appending .json but that isn't working for some reason.
+  test 'execute - should handle json format' do
+    executor_mock = MiniTest::Mock.new
+    executor_mock.expect :call, GrpcurlResult.new({ command: SUCCESS_MOCK_COMMAND, raw_output: SUCCESS_MOCK_RESPONSE, raw_errors: "", hints: ["foo-hint1", "foo-hint2"] }), [GrpcurlBuilder]
+
+    GrpcurlExecutor.stub :execute, executor_mock do
+      post service_execute_path + ".json",
+           headers: { "HTTP_NON_GRPC_OTHER": "some value",
+                      "HTTP_GRPC_AUTHORIZATION": "auth-token" },
+           params: DEFAULT_SUCCESS_PARAMS
+
+      assert_response :success
+      expected_response = "{\"exampleResponse\":{\"foo\":\"BAR\"}}"
+      assert_equal expected_response, @response.body, 'Response is not matching expected JSON or does not contain only json'
+    end
+    assert_mock executor_mock
+  end
+
   test 'execute - should handle failure response' do
     error_string = "Test-Error"
     executor_mock = MiniTest::Mock.new
-    executor_mock.expect :call, GrpcurlResult.new({command: SUCCESS_MOCK_COMMAND, raw_output: "", raw_errors: error_string, hints: ['foo-error-hint']}), [GrpcurlBuilder]
+    executor_mock.expect :call, GrpcurlResult.new({ command: SUCCESS_MOCK_COMMAND, raw_output: "", raw_errors: error_string, hints: ['foo-error-hint'] }), [GrpcurlBuilder]
 
     GrpcurlExecutor.stub :execute, executor_mock do
       post service_execute_path,
@@ -142,4 +160,6 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
 
     assert_mock executor_mock
   end
+
+
 end

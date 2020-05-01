@@ -11,7 +11,11 @@ class ServiceController < ApplicationController
     if builder.valid?
       result = GrpcurlExecutor.execute(builder)
       status = result.is_success? ? :ok : :bad_request
-      render plain: result.to_api_response, status: status
+      respond_to do |format|
+        # JSON format allows easier automation/FE *initial* integration
+        format.json { render json: result.to_json_response, status: status }
+        format.all { render plain: result.to_text_response, status: status }
+      end
     else
       render json: { errors: builder.errors }, status: :bad_request
     end

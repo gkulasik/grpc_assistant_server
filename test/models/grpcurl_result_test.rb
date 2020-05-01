@@ -52,7 +52,7 @@ class GrpcurlResultTest < ActiveSupport::TestCase
     assert_equal expected_three, result.parse_raw_output("test test \ntest [] {test-data} \n #{GrpcurlResult::GRPC_RESPONSE_START_MARKER}\n{\"test\":[\"foo\",\"bar\"], \"foo\":\"bar\"\n}\n#{GrpcurlResult::GRPC_RESPONSE_END_MARKER}")
   end
 
-  test 'to api response - success' do
+  test 'to text response - success' do
     min_success_response_string = "
         Response contents:
         {
@@ -62,7 +62,7 @@ class GrpcurlResultTest < ActiveSupport::TestCase
         Response trailers received:
         "
     result = build(:grpcurl_result_success, raw_output: min_success_response_string, hints: ["foo-hint"])
-    result_api_response = result.to_api_response
+    result_api_response = result.to_text_response
     assert result_api_response.include?("### Parsed Response ###"), "Got response: #{result_api_response}"
     assert result_api_response.include?("\"foo\": \"BAR\""), "Got response: #{result_api_response}"
     assert result_api_response.include?("### Command Used ###"), "Got response: #{result_api_response}"
@@ -74,7 +74,7 @@ class GrpcurlResultTest < ActiveSupport::TestCase
     assert result_api_response.include?("Response contents:"), "Got response: #{result_api_response}"
   end
 
-  test 'to api response - failure' do
+  test 'to text response - failure' do
     result = build(:grpcurl_result_failure)
     expected = "### Error ###
 
@@ -84,7 +84,27 @@ errors
 test-command
 
 "
-    assert_equal expected, result.to_api_response
+    assert_equal expected, result.to_text_response
   end
 
+  test 'to json response - success' do
+    min_success_response_string = "
+        Response contents:
+        {
+            \"foo\": \"BAR\"
+        }
+
+        Response trailers received:
+        "
+    result = build(:grpcurl_result_success, raw_output: min_success_response_string, hints: ["foo-hint"])
+    result_api_response = result.to_json_response
+    expected_response = { "foo" => "BAR" }
+    assert_equal expected_response, result_api_response
+  end
+
+  test 'to json response - failure' do
+    result = build(:grpcurl_result_failure)
+    expected = { :error => "errors" }
+    assert_equal expected, result.to_json_response
+  end
 end

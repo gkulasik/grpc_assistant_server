@@ -1,3 +1,5 @@
+require 'json'
+
 class GrpcurlResult
   attr_accessor :command, # @type [String] command
                 :raw_output, # @type [String] raw_output
@@ -69,14 +71,24 @@ class GrpcurlResult
 
   # Convert GrpcResult into an API response with relevant information
   # @return [String]
-  def to_api_response
+  def to_text_response
     line_break = "\n\n"
     response = is_success? ? "#{RESPONSE_PARSED_HEADER} \n#{get_response}" : ""
     errors = is_success? ? "" : "#{ERROR_HEADER}#{line_break}#{@raw_errors}"
     full_response = is_success? ? "#{FULL_RESPONSE_HEADER}\n#{@raw_output}" : ""
     command = "\n#{COMMAND_HEADER}#{line_break}#{@command}#{line_break}"
-    formatted_hints = @hints.map{|h| "\n  - #{h}"}.join("")
+    formatted_hints = @hints.map { |h| "\n  - #{h}" }.join("")
     hints = @hints.any? ? "#{HINTS_HEADER}\n#{formatted_hints}#{line_break}" : ""
     response + errors + command + hints + full_response
+  end
+
+  # Parse response to JSON (hash)
+  # @return [Hash]
+  def to_json_response
+    if is_success?
+      JSON.parse(get_response)
+    else
+      { error: @raw_errors }
+    end
   end
 end
