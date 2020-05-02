@@ -1,19 +1,13 @@
 version: '3.6'
 services:
-  database:
-    image: postgres:12.1
-
   web:
-    image: gkulasik/grpc_assistant_server:latest
+    image: gkulasik/grpc_assistant_server:1.1.0
     command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
     ports:
       - "3000:3000"
     working_dir: /app
-    depends_on:
-      - database
     volumes:
       - ./:/app
       - /Users:/app/Users
     environment:
       RAILS_ENV: development
-      DATABASE_URL: postgres://postgres@database

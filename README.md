@@ -32,7 +32,7 @@ This will create a new directory called grpc_assistant_server with all the neces
 
 `./start_grpc_assistant_server.sh`
 
-Will start the Rails server, Postgres DB, and run migrations. Access from localhost:3000 by default. On first run the docker containers will be pulled.
+Will start the Rails server and run migrations against the internal Sqlite3 DB. Access from localhost:3000 by default. On first run the docker containers will be pulled.
 
 ### Stop the service
 

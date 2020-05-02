@@ -138,12 +138,12 @@ class GrpcurlBuilder
     add_if_present(@data, current_string, " -d '#{adjusted_data}' ")
   end
 
-  # Adds -v tag to grpcurl command
+  # Adds -v tag to grpcurl command for verbose output
   def add_verbose(current_string)
     add_if_present(@verbose_output, current_string, " -v ")
   end
 
-  # Adds -plaintext tag to grpcurl command
+  # Adds -plaintext tag to grpcurl command (acts as insecure flag)
   def add_insecure(current_string)
     log_hint(BuilderHints::INSECURE_FLAG) if @insecure.present?
     add_if_present(@insecure, current_string, " -plaintext ")
