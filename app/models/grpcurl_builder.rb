@@ -1,7 +1,7 @@
 class GrpcurlBuilder
   attr_accessor :import_path, # @type [String] import_path
                 :service_proto_path, # @type [String] service_proto_path
-                :data, # @type [Hash] JSON structured data
+                :data, # @type [String] JSON structured data (or Hash)
                 :insecure, # @type [Boolean] insecure
                 :server_address, # @type [String] server_address
                 :service_name, # @type [String] service_name
@@ -25,23 +25,30 @@ class GrpcurlBuilder
   end
 
   # Helper to generate GrpcBuilder in format easier for controller
-  # @param [Hash] headers
-  # @param [Hash] params
+  # @param [Hash] metadata
+  # @param [Hash] request_headers
+  # @param [String] body
   # @return [GrpcurlBuilder]
-  def self.from_params(headers, params)
-    options = params["options"] || {}
+  def self.from_params(metadata, request_headers, params, body)
     build_params = {
-        import_path: options["import_path"],
-        service_proto_path: options["service_proto_path"],
-        insecure: options["insecure"],
-        verbose_output: options["verbose"],
-        server_address: params["server_address"],
+        import_path: metadata[BuilderMetadata::IMPORT_PATH],
+        service_proto_path: metadata[BuilderMetadata::SERVICE_PROTO_PATH],
+        insecure: eval_to_bool(metadata[BuilderMetadata::INSECURE]),
+        verbose_output: eval_to_bool(metadata[BuilderMetadata::VERBOSE]),
+        server_address: metadata[BuilderMetadata::SERVER_ADDRESS],
         service_name: params["service_name"],
         method_name: params["method_name"],
-        data: params["data"],
-        headers: headers || Hash.new,
+        data: body,
+        headers: request_headers || Hash.new,
         hints: [] }
     GrpcurlBuilder.new(build_params)
+  end
+
+  # Helper to convert mostly text to boolean
+  # @param [Object] to_eval
+  # @return [Boolean]
+  def self.eval_to_bool(to_eval)
+    ActiveModel::Type::Boolean.new.cast(to_eval)
   end
 
   # @return [TrueClass, FalseClass]
@@ -126,7 +133,9 @@ class GrpcurlBuilder
 
   # Adds data to grpcurl command (-d)
   def add_data(current_string)
-    add_if_present(@data, current_string, " -d '#{@data.to_json}' ")
+    data_in_string_form = @data.is_a?(Hash) ? @data.to_json : @data.to_s
+    adjusted_data = @data.present? ? data_in_string_form.squish : "" # remove white space/formatting
+    add_if_present(@data, current_string, " -d '#{adjusted_data}' ")
   end
 
   # Adds -v tag to grpcurl command

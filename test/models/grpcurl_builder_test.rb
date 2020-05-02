@@ -36,21 +36,16 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
   end
 
   test "init via from_params" do
-    headers = DEFAULT_HEADERS
+    DEFAULT_SUCCESS_META_HEADERS = { "SERVER_ADDRESS": DEFAULT_SERVER_ADDRESS,
+                                     "VERBOSE": "false",
+                                     "IMPORT_PATH": DEFAULT_IMPORT_PATH,
+                                     "SERVICE_PROTO_PATH": DEFAULT_PROTO_PATH,
+                                     "INSECURE": "true" }
     params = {
-        "options" => {
-            "import_path" => DEFAULT_IMPORT_PATH,
-            "service_proto_path" => DEFAULT_PROTO_PATH,
-            "insecure" => true,
-            "verbose" => false
-        },
-        "server_address" => DEFAULT_SERVER_ADDRESS,
         "service_name" => DEFAULT_SERVICE_NAME,
         "method_name" => DEFAULT_METHOD_NAME,
-        "data" => DEFAULT_DATA,
-        "headers" => DEFAULT_HEADERS
     }
-    builder = GrpcurlBuilder.from_params(headers, params)
+    builder = GrpcurlBuilder.from_params(DEFAULT_SUCCESS_META_HEADERS, DEFAULT_HEADERS, params, DEFAULT_DATA)
 
     assert_equal DEFAULT_IMPORT_PATH, builder.import_path
     assert_equal DEFAULT_PROTO_PATH, builder.service_proto_path
@@ -159,8 +154,13 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
   end
 
   test "should handle data" do
-    # Option present
+    # Option present - hash data
     builder = build(:grpcurl_builder, data: DEFAULT_DATA)
+    expected = "grpcurl  -import-path '/path/to/importable/protos'  -proto 'path/to/main/service/proto/file.proto'  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+
+    # String data
+    builder = build(:grpcurl_builder, data: DEFAULT_DATA.to_json)
     expected = "grpcurl  -import-path '/path/to/importable/protos'  -proto 'path/to/main/service/proto/file.proto'  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
     assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
 

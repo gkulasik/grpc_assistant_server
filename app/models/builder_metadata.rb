@@ -1,0 +1,7 @@
+module BuilderMetadata
+  IMPORT_PATH = "IMPORT_PATH".to_sym
+  SERVICE_PROTO_PATH = "SERVICE_PROTO_PATH".to_sym
+  INSECURE = "INSECURE".to_sym
+  VERBOSE = "VERBOSE".to_sym
+  SERVER_ADDRESS = "SERVER_ADDRESS".to_sym
+end

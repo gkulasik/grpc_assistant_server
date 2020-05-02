@@ -1,7 +1,6 @@
 require 'test_helper'
 class GrpcurlResultTest < ActiveSupport::TestCase
 
-
   test 'init parses response when proper' do
     example_result = build(:grpcurl_result_success)
     success_result = GrpcurlResult.new({ command: example_result.command, raw_output: example_result.raw_output, raw_errors: nil })
