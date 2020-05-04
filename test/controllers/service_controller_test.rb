@@ -61,7 +61,27 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     expected_response = "grpcurl  -import-path '/import/path'  -proto 'some/example/examples.proto'  -H 'AUTHORIZATION:auth-token'  -plaintext  -v  -d '{\"field_one\":1,\"field_two\":\"two\",\"field_three\":true}'  example.com:443  com.example.proto.ExampleService/ExampleMethod "
-    assert_equal SUCCESS_MOCK_COMMAND, @response.body
+    assert_equal expected_response, @response.body
+  end
+
+  test "command - should handle GAS options header" do
+    # No timestamps
+    post command_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
+         headers: DEFAULT_HEADERS.merge({"HTTP_GRPC_META_gas_options" => 'auto_format_dates:true'}),
+         params: DEFAULT_SUCCESS_BODY
+
+    assert_response :success
+    expected_response = "grpcurl  -import-path '/import/path'  -proto 'some/example/examples.proto'  -H 'AUTHORIZATION:auth-token'  -plaintext  -v  -d '{\"field_one\":1,\"field_two\":\"two\",\"field_three\":true}'  example.com:443  com.example.proto.ExampleService/ExampleMethod "
+    assert_equal expected_response, @response.body
+
+    # with timestamps
+    post command_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
+         headers: DEFAULT_HEADERS.merge({"HTTP_GRPC_META_gas_options" => 'auto_format_dates:true'}),
+         params: JSON.parse(DEFAULT_SUCCESS_BODY).merge({'field4' => '2020-01-01'}).to_json
+
+    assert_response :success
+    expected_response = "grpcurl  -import-path '/import/path'  -proto 'some/example/examples.proto'  -H 'AUTHORIZATION:auth-token'  -plaintext  -v  -d '{\"field_one\":1,\"field_two\":\"two\",\"field_three\":true,\"field4\":{\"year\":2020,\"month\":1,\"day\":1}}'  example.com:443  com.example.proto.ExampleService/ExampleMethod "
+    assert_equal expected_response, @response.body
   end
 
   test "command - should fail with incorrect call" do
@@ -100,6 +120,58 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
       assert @response.body.include?("- foo-hint2"), 'Response is missing a hint'
     end
 
+    assert_mock executor_mock
+  end
+
+  test "execute - should handle GAS options header - no date" do
+    executor_mock = MiniTest::Mock.new
+    executor_mock.expect :call, GrpcurlResult.new({ command: SUCCESS_MOCK_COMMAND, raw_output: SUCCESS_MOCK_RESPONSE, raw_errors: "", hints: ["foo-hint1", "foo-hint2"] }), [GrpcurlBuilder]
+
+    GrpcurlExecutor.stub :execute, executor_mock do
+    # No timestamps
+    post execute_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
+         headers: DEFAULT_HEADERS.merge({"HTTP_GRPC_META_gas_options" => 'auto_format_dates:true'}),
+         params: DEFAULT_SUCCESS_BODY
+
+    assert_response :success
+    expected_response = "{\"exampleResponse\":{\"foo\":\"BAR\"}}"
+    assert @response.body.include?(GrpcurlResult::RESPONSE_PARSED_HEADER), 'Response is missing the parsed response header'
+    assert_not @response.body.include?(GrpcurlResult::ERROR_HEADER), 'Response contains the error header'
+    assert @response.body.include?(GrpcurlResult::HINTS_HEADER), 'Response is missing the hints header'
+    # For reliability remove formatting white space
+    assert @response.body.gsub(/\s+/, "").include?(expected_response), 'Response did not contain the parsed response'
+    assert @response.body.include?(SUCCESS_MOCK_COMMAND), 'Response did not contain the command used'
+    assert @response.body.include?(SUCCESS_MOCK_RESPONSE), 'Response did not contain the full output'
+    assert @response.body.include?("- foo-hint1"), 'Response is missing a hint'
+    assert @response.body.include?("- foo-hint2"), 'Response is missing a hint'
+    end
+    assert_mock executor_mock
+  end
+
+  test "execute - should handle GAS options header - with date" do
+    executor_mock = MiniTest::Mock.new
+    expected_command_with_date = "grpcurl  -import-path '/import/path'  -proto 'some/example/examples.proto'  -H 'AUTHORIZATION:auth-token'  -plaintext  -v  -d '{\"field_one\":1,\"field_two\":\"two\",\"field_three\":true,\"field4\":{\"seconds\":1588462761,\"nanos\":560000000}}'  example.com:443  com.example.proto.ExampleService/ExampleMethod "
+    executor_mock.expect :call, GrpcurlResult.new({ command: expected_command_with_date, raw_output: SUCCESS_MOCK_RESPONSE, raw_errors: "", hints: ["foo-hint1", "foo-hint2"] }), [GrpcurlBuilder]
+
+    GrpcurlExecutor.stub :execute, executor_mock do
+      # with timestamps
+      post execute_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
+           headers: DEFAULT_HEADERS.merge({"HTTP_GRPC_META_gas_options" => 'auto_format_dates:true'}),
+           params: JSON.parse(DEFAULT_SUCCESS_BODY).merge({'field4' => '2020-05-02T23:39:21.560Z'}).to_json
+
+      assert_response :success
+      expected_response = "{\"exampleResponse\":{\"foo\":\"BAR\"}}"
+      body = @response.body
+      assert body.include?(GrpcurlResult::RESPONSE_PARSED_HEADER), 'Response is missing the parsed response header'
+      assert_not body.include?(GrpcurlResult::ERROR_HEADER), 'Response contains the error header'
+      assert body.include?(GrpcurlResult::HINTS_HEADER), 'Response is missing the hints header'
+      # For reliability remove formatting white space
+      assert body.gsub(/\s+/, "").include?(expected_response), 'Response did not contain the parsed response'
+      assert body.include?(expected_command_with_date), 'Response did not contain the command used'
+      assert body.include?(SUCCESS_MOCK_RESPONSE), 'Response did not contain the full output'
+      assert body.include?("- foo-hint1"), 'Response is missing a hint'
+      assert body.include?("- foo-hint2"), 'Response is missing a hint'
+    end
     assert_mock executor_mock
   end
 
@@ -163,5 +235,4 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
 
     assert_mock executor_mock
   end
-
 end

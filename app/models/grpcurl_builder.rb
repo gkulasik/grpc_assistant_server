@@ -8,7 +8,8 @@ class GrpcurlBuilder
                 :method_name, # @type [String] method_name
                 :verbose_output, # @type [Boolean] verbose_output
                 :headers, # @type [Hash] headers
-                :hints # Array[String] hints
+                :hints, # [Array<String>] hints
+                :assistant_options # [Hash<String, String>] assist_options
 
   # @return [GrpcurlBuilder]
   def initialize(params = {})
@@ -22,6 +23,17 @@ class GrpcurlBuilder
     @verbose_output = params.fetch(:verbose_output, false)
     @headers = params.fetch(:headers, Hash.new)
     @hints = params.fetch(:hints, [])
+
+    begin
+      @assistant_options = params.fetch(:assistant_options, '')
+                               .split(';')
+                               .map { |option| { option.split(':')[0] => option.split(':')[1] } }
+                               .reduce({}, :merge)
+    rescue
+      log_hint(BuilderHints::INVALID_ASSISTANT_OPTIONS) unless params.fetch(:assistant_options, '').nil?
+      @assistant_options =  {}
+    end
+
   end
 
   # Helper to generate GrpcBuilder in format easier for controller
@@ -33,22 +45,16 @@ class GrpcurlBuilder
     build_params = {
         import_path: metadata[BuilderMetadata::IMPORT_PATH],
         service_proto_path: metadata[BuilderMetadata::SERVICE_PROTO_PATH],
-        insecure: eval_to_bool(metadata[BuilderMetadata::INSECURE]),
-        verbose_output: eval_to_bool(metadata[BuilderMetadata::VERBOSE]),
+        insecure: Util.eval_to_bool(metadata[BuilderMetadata::INSECURE]),
+        verbose_output: Util.eval_to_bool(metadata[BuilderMetadata::VERBOSE]),
         server_address: metadata[BuilderMetadata::SERVER_ADDRESS],
         service_name: params["service_name"],
         method_name: params["method_name"],
         data: body,
         headers: request_headers || Hash.new,
-        hints: [] }
+        hints: [],
+        assistant_options: metadata[BuilderMetadata::ASSISTANT_OPTIONS] }
     GrpcurlBuilder.new(build_params)
-  end
-
-  # Helper to convert mostly text to boolean
-  # @param [Object] to_eval
-  # @return [Boolean]
-  def self.eval_to_bool(to_eval)
-    ActiveModel::Type::Boolean.new.cast(to_eval)
   end
 
   # @return [TrueClass, FalseClass]
@@ -131,13 +137,6 @@ class GrpcurlBuilder
     add_if_present(@service_proto_path, current_string, " -proto '#{@service_proto_path}' ")
   end
 
-  # Adds data to grpcurl command (-d)
-  def add_data(current_string)
-    data_in_string_form = @data.is_a?(Hash) ? @data.to_json : @data.to_s
-    adjusted_data = @data.present? ? data_in_string_form.squish : "" # remove white space/formatting
-    add_if_present(@data, current_string, " -d '#{adjusted_data}' ")
-  end
-
   # Adds -v tag to grpcurl command for verbose output
   def add_verbose(current_string)
     add_if_present(@verbose_output, current_string, " -v ")
@@ -176,6 +175,14 @@ class GrpcurlBuilder
     return current_string if @headers.nil?
     string_headers = @headers.map { |k, v| " -H '#{k}:#{v}' " }.join("")
     current_string + string_headers
+  end
+
+  # Adds data to grpcurl command (-d)
+  def add_data(current_string)
+    data_in_string_form = @data.is_a?(Hash) ? @data.to_json : @data.to_s
+    formatted_data = GasAutoFormatter.format(data_in_string_form, @assistant_options)
+    adjusted_data = @data.present? ? formatted_data.squish : "" # remove white space/formatting
+    add_if_present(@data, current_string, " -d '#{adjusted_data}' ")
   end
 
   # Helper to log hints on usage

@@ -1,7 +1,7 @@
 FROM ruby:2.6.3
 
 # Install/update dependencies
-RUN apt-get update && apt-get install -y golang-go git make musl-dev
+RUN apt-get update && apt-get install -y golang-go git make musl-dev libsqlite3-dev
 
 # Configure Go
 ENV GOROOT /usr/lib/go

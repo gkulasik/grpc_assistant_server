@@ -9,5 +9,6 @@ FactoryBot.define do
     method_name 'ExampleMethod'
     verbose_output false
     headers {{}}
+    assistant_options 'auto_format_dates:true;test_option:false'
   end
 end

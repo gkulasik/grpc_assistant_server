@@ -4,4 +4,5 @@ module BuilderMetadata
   INSECURE = "INSECURE".to_sym
   VERBOSE = "VERBOSE".to_sym
   SERVER_ADDRESS = "SERVER_ADDRESS".to_sym
+  ASSISTANT_OPTIONS = "GAS_OPTIONS".to_sym
 end

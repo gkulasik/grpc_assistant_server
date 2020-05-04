@@ -2,7 +2,7 @@ class ServiceController < ApplicationController
   # See get_grpc_headers comment for more information
   # GRPC_REQUEST_HEADER_PREFIX - Prefix for request headers (like Authorization)
   GRPC_REQUEST_HEADER_PREFIX = "HTTP_GRPC_REQ_"
-  # GRPC_METADATA_PREFIX - Prefix for request metadata like service_address or import_path
+  # GRPC_METADATA_PREFIX - Prefix for request metadata like service_address, import_path, or gas_options
   GRPC_METADATA_PREFIX = "HTTP_GRPC_META_"
 
   # Execute a given grpcurl command given input, returns command and result
