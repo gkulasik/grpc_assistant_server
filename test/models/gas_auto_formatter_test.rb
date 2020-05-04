@@ -3,9 +3,9 @@ class GasAutoFormatterTest < ActiveSupport::TestCase
   FORMAT_OPTIONS_DEFAULT = { GasFormatType::AUTO_DATE_FORMAT => true }
 
   test 'format - general' do
-    # Failure cases
-    assert_equal "{}", GasAutoFormatter.format("blah", {}), 'Invalid string input, should return empty hash'
-    assert_equal "{}", GasAutoFormatter.format("foobar", FORMAT_OPTIONS_DEFAULT)
+    # Failure cases - return input data
+    assert_equal "blah", GasAutoFormatter.format("blah", {})
+    assert_equal "foobar", GasAutoFormatter.format("foobar", FORMAT_OPTIONS_DEFAULT)
 
     # General success cases
     assert_equal "{\"foo\":\"bar\"}",

@@ -31,7 +31,7 @@ class GrpcurlBuilder
                                .reduce({}, :merge)
     rescue
       log_hint(BuilderHints::INVALID_ASSISTANT_OPTIONS) unless params.fetch(:assistant_options, '').nil?
-      @assistant_options =  {}
+      @assistant_options = {}
     end
 
   end
@@ -180,7 +180,12 @@ class GrpcurlBuilder
   # Adds data to grpcurl command (-d)
   def add_data(current_string)
     data_in_string_form = @data.is_a?(Hash) ? @data.to_json : @data.to_s
-    formatted_data = GasAutoFormatter.format(data_in_string_form, @assistant_options)
+    formatted_data = if Util.is_json_valid?(data_in_string_form)
+      GasAutoFormatter.format(data_in_string_form, @assistant_options)
+    else
+      log_hint(BuilderHints::INVALID_JSON)
+      data_in_string_form
+    end
     adjusted_data = @data.present? ? formatted_data.squish : "" # remove white space/formatting
     add_if_present(@data, current_string, " -d '#{adjusted_data}' ")
   end

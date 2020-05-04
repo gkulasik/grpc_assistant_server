@@ -211,6 +211,20 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
   end
 
+  test 'data hints' do
+    # Valid JSON body
+    builder = build(:grpcurl_builder, data: DEFAULT_DATA)
+    assert_empty builder.hints
+    builder.build(BuilderMode::COMMAND)
+    assert_not builder.hints.include?(BuilderHints::INVALID_JSON), "Hint that should not be present is: #{builder.hints}"
+
+    # invalid json body
+    builder = build(:grpcurl_builder, data: "[sdfsadf][- - - {}[")
+    assert_empty builder.hints
+    builder.build(BuilderMode::COMMAND)
+    assert builder.hints.include?(BuilderHints::INVALID_JSON), "Proper hint for build not present: #{builder.hints}"
+  end
+
   test 'should handle server address' do
     # Option present
     builder = build(:grpcurl_builder, server_address: DEFAULT_SERVER_ADDRESS)
