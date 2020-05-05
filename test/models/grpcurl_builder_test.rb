@@ -21,6 +21,9 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
                                  server_address: DEFAULT_SERVER_ADDRESS,
                                  service_name: DEFAULT_SERVICE_NAME,
                                  method_name: DEFAULT_METHOD_NAME,
+                                 max_message_size: 15,
+                                 connect_timeout: 10,
+                                 max_time: 5,
                                  verbose_output: true,
                                  headers: DEFAULT_HEADERS,
                                  assistant_options: 'auto_format_dates:true;test_option:false')
@@ -32,6 +35,9 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     assert_equal DEFAULT_METHOD_NAME, builder.method_name
     assert_equal DEFAULT_HEADERS, builder.headers
     assert_equal false, builder.plaintext
+    assert_equal 15, builder.max_message_size
+    assert_equal 10, builder.connect_timeout
+    assert_equal 5, builder.max_time
     assert_equal true, builder.verbose_output
     assert_equal [], builder.hints
     default_assist_options = { 'auto_format_dates' => 'true', 'test_option' => 'false' }
@@ -67,7 +73,10 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
                                      'IMPORT_PATH': DEFAULT_IMPORT_PATH,
                                      'SERVICE_PROTO_PATH': DEFAULT_PROTO_PATH,
                                      'PLAINTEXT': 'true',
-                                     'GAS_OPTIONS': 'option1:true;option2:1'}
+                                     'GAS_OPTIONS': 'option1:true;option2:1',
+                                     'MAX_MESSAGE_SIZE': '15',
+                                     'MAX_TIME': '10',
+                                     'CONNECT_TIMEOUT': '5'}
     params = {
         'service_name' => DEFAULT_SERVICE_NAME,
         'method_name' => DEFAULT_METHOD_NAME,
@@ -82,6 +91,9 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     assert_equal DEFAULT_METHOD_NAME, builder.method_name
     assert_equal DEFAULT_HEADERS, builder.headers
     assert_equal true, builder.plaintext
+    assert_equal '15', builder.max_message_size
+    assert_equal '10', builder.max_time
+    assert_equal '5', builder.connect_timeout
     assert_equal false, builder.verbose_output
     assert_equal [], builder.hints
     expected_options = {'option1' => 'true', 'option2' => '1'}
@@ -180,6 +192,42 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     assert_empty builder.hints
     builder.build(BuilderMode::COMMAND)
     assert_not builder.hints.include?(BuilderHints::PLAINTEXT_FLAG), "Did not expect hint to be present: #{builder.hints}"
+  end
+
+  test 'should handle max message size flag' do
+    # Option present
+    builder = build(:grpcurl_builder, max_message_size: 25)
+    expected = "grpcurl  -import-path '/path/to/importable/protos'  -proto 'path/to/main/service/proto/file.proto'  -max-msg-sz 25  -d '{\"test\":\"json data\"}'  example.com:443  com.example.protos.ExampleService/ExampleMethod "
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+
+    # Option omitted
+    builder = build(:grpcurl_builder, max_message_size: nil)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
+  end
+
+  test 'should handle max time flag' do
+    # Option present
+    builder = build(:grpcurl_builder, max_time: 25)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -max-time 25  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+
+    # Option omitted
+    builder = build(:grpcurl_builder, max_time: nil)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
+  end
+
+  test 'should handle connect timeout flag' do
+    # Option present
+    builder = build(:grpcurl_builder, connect_timeout: 25)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -connect-timeout 25  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+
+    # Option omitted
+    builder = build(:grpcurl_builder, max_time: nil)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
   end
 
   test 'should handle data' do

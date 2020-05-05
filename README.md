@@ -116,6 +116,9 @@ Grpcurl tags/attributes supported (mapped GAS -> grpcurl tag):
 - options.import_path [string] => -import-path
 - options.service_proto_path [string] => -proto
 - options.plaintext [boolean] => -plaintext
+- options.max_time [int] => -max-time
+- options.connect_timeout [int] => -connect-timeout
+- options.max_message_size [int] => -max-msg-sz
 - server_address [string] => address
 - service_name [string] => symbol
 - method_name [string] => symbol

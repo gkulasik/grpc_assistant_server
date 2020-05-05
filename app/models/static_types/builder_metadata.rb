@@ -5,4 +5,7 @@ module BuilderMetadata
   VERBOSE = "VERBOSE".to_sym
   SERVER_ADDRESS = "SERVER_ADDRESS".to_sym
   ASSISTANT_OPTIONS = "GAS_OPTIONS".to_sym
+  MAX_MESSAGE_SIZE = "MAX_MESSAGE_SIZE".to_sym
+  MAX_TIME = "MAX_TIME".to_sym
+  CONNECT_TIMEOUT = "CONNECT_TIMEOUT".to_sym
 end

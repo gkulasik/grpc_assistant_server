@@ -7,6 +7,9 @@ class GrpcurlBuilder
                 :service_name, # @type [String] service_name
                 :method_name, # @type [String] method_name
                 :verbose_output, # @type [Boolean] verbose_output
+                :max_message_size, # @type [Int] max_message_size
+                :connect_timeout, # @type [Int] connect_timeout
+                :max_time, # @type [Int] max_time
                 :headers, # @type [Hash] headers
                 :hints, # [Array<String>] hints
                 :assistant_options # [Hash<String, String>] assist_options
@@ -23,6 +26,9 @@ class GrpcurlBuilder
     @verbose_output = params.fetch(:verbose_output, false)
     @headers = params.fetch(:headers, Hash.new)
     @hints = params.fetch(:hints, [])
+    @max_message_size = params.fetch(:max_message_size, nil)
+    @connect_timeout = params.fetch(:connect_timeout, nil)
+    @max_time = params.fetch(:max_time, nil)
 
     begin
       @assistant_options = params.fetch(:assistant_options, '')
@@ -50,6 +56,9 @@ class GrpcurlBuilder
         server_address: metadata[BuilderMetadata::SERVER_ADDRESS],
         service_name: params["service_name"],
         method_name: params["method_name"],
+        max_message_size: metadata[BuilderMetadata::MAX_MESSAGE_SIZE],
+        max_time: metadata[BuilderMetadata::MAX_TIME],
+        connect_timeout: metadata[BuilderMetadata::CONNECT_TIMEOUT],
         data: body,
         headers: request_headers || Hash.new,
         hints: [],
@@ -91,6 +100,9 @@ class GrpcurlBuilder
     grpcurl = add_headers(grpcurl)
     grpcurl = add_plaintext(grpcurl)
     grpcurl = add_verbose(grpcurl)
+    grpcurl = add_max_message_size(grpcurl)
+    grpcurl = add_max_time(grpcurl)
+    grpcurl = add_connect_timeout(grpcurl)
     grpcurl = add_data(grpcurl)
     # Address
     grpcurl = add_server_address(grpcurl)
@@ -148,6 +160,24 @@ class GrpcurlBuilder
     add_if_present(@plaintext, current_string, " -plaintext ")
   end
 
+  # Adds -max-msg-sz tag to grpcurl command (default 4,194,304 = 4mb)
+  # Should be INT in bytes
+  def add_max_message_size(current_string)
+    add_if_present(@max_message_size, current_string, " -max-msg-sz #{@max_message_size} ")
+  end
+
+  # Adds -max-time tag to grpcurl command
+  # Should be INT or Float in seconds
+  def add_max_time(current_string)
+    add_if_present(@max_time, current_string, " -max-time #{@max_time} ")
+  end
+
+  # Adds -connect-timeout tag to grpcurl command (default 10)
+  # Should be INT in seconds
+  def add_connect_timeout(current_string)
+    add_if_present(@connect_timeout, current_string, " -connect-timeout #{@connect_timeout} ")
+  end
+
   # Adds server address to the grpcurl command
   def add_server_address(current_string)
     add_if_present(@server_address, current_string, " #{@server_address} ")
@@ -181,11 +211,11 @@ class GrpcurlBuilder
   def add_data(current_string)
     data_in_string_form = @data.is_a?(Hash) ? @data.to_json : @data.to_s
     formatted_data = if Util.is_json_valid?(data_in_string_form)
-      GasAutoFormatter.format(data_in_string_form, @assistant_options)
-    else
-      log_hint(BuilderHints::INVALID_JSON)
-      data_in_string_form
-    end
+                       GasAutoFormatter.format(data_in_string_form, @assistant_options)
+                     else
+                       log_hint(BuilderHints::INVALID_JSON)
+                       data_in_string_form
+                     end
     adjusted_data = @data.present? ? formatted_data.squish : "" # remove white space/formatting
     add_if_present(@data, current_string, " -d '#{adjusted_data}' ")
   end
