@@ -62,7 +62,7 @@ class ServiceController < ApplicationController
                                    :service_name,
                                    :method_name,
                                    :data,
-                                   options: [:verbose, :import_path, :service_proto_path, :insecure])
+                                   options: [:verbose, :import_path, :service_proto_path, :plaintext])
     allowed_params[:data] = params[:data]
     allowed_params.permit!
   end

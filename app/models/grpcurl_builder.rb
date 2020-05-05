@@ -2,7 +2,7 @@ class GrpcurlBuilder
   attr_accessor :import_path, # @type [String] import_path
                 :service_proto_path, # @type [String] service_proto_path
                 :data, # @type [String] JSON structured data (or Hash)
-                :insecure, # @type [Boolean] insecure
+                :plaintext, # @type [Boolean] plaintext
                 :server_address, # @type [String] server_address
                 :service_name, # @type [String] service_name
                 :method_name, # @type [String] method_name
@@ -16,7 +16,7 @@ class GrpcurlBuilder
     @import_path = params.fetch(:import_path, nil)
     @service_proto_path = params.fetch(:service_proto_path, nil)
     @data = params.fetch(:data, nil)
-    @insecure = params.fetch(:insecure, true)
+    @plaintext = params.fetch(:plaintext, true)
     @server_address = params.fetch(:server_address, nil)
     @service_name = params.fetch(:service_name, nil)
     @method_name = params.fetch(:method_name, nil)
@@ -45,7 +45,7 @@ class GrpcurlBuilder
     build_params = {
         import_path: metadata[BuilderMetadata::IMPORT_PATH],
         service_proto_path: metadata[BuilderMetadata::SERVICE_PROTO_PATH],
-        insecure: Util.eval_to_bool(metadata[BuilderMetadata::INSECURE]),
+        plaintext: Util.eval_to_bool(metadata[BuilderMetadata::PLAINTEXT]),
         verbose_output: Util.eval_to_bool(metadata[BuilderMetadata::VERBOSE]),
         server_address: metadata[BuilderMetadata::SERVER_ADDRESS],
         service_name: params["service_name"],
@@ -89,7 +89,7 @@ class GrpcurlBuilder
     grpcurl = add_import_path(grpcurl, builder_mode)
     grpcurl = add_service_proto_path(grpcurl)
     grpcurl = add_headers(grpcurl)
-    grpcurl = add_insecure(grpcurl)
+    grpcurl = add_plaintext(grpcurl)
     grpcurl = add_verbose(grpcurl)
     grpcurl = add_data(grpcurl)
     # Address
@@ -142,10 +142,10 @@ class GrpcurlBuilder
     add_if_present(@verbose_output, current_string, " -v ")
   end
 
-  # Adds -plaintext tag to grpcurl command (acts as insecure flag)
-  def add_insecure(current_string)
-    log_hint(BuilderHints::INSECURE_FLAG) if @insecure.present?
-    add_if_present(@insecure, current_string, " -plaintext ")
+  # Adds -plaintext tag to grpcurl command (no TLS - useful for local)
+  def add_plaintext(current_string)
+    log_hint(BuilderHints::PLAINTEXT_FLAG) if @plaintext.present?
+    add_if_present(@plaintext, current_string, " -plaintext ")
   end
 
   # Adds server address to the grpcurl command

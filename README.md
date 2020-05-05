@@ -115,7 +115,7 @@ Grpcurl tags/attributes supported (mapped GAS -> grpcurl tag):
 - options.verbose [boolean] => -v
 - options.import_path [string] => -import-path
 - options.service_proto_path [string] => -proto
-- options.insecure [boolean] => -plaintext
+- options.plaintext [boolean] => -plaintext
 - server_address [string] => address
 - service_name [string] => symbol
 - method_name [string] => symbol
@@ -140,7 +140,7 @@ Header:  grpc-Authorization: auth-token
 		"verbose": true,
 		"import_path": "import/src",
 		"service_proto_path": "path/to/proto/service/file/services.proto",
-		"insecure": false
+		"plaintext": false
 	},
 	"server_address": "example.com:443",
 	"service_name": "com.example.proto.example.FooService",
@@ -161,7 +161,7 @@ curl --location --request POST 'localhost:3000/service/command' \
  		"verbose": true,
  		"import_path": "import/src",
  		"service_proto_path": "path/to/proto/service/file/services.proto",
- 		"insecure": false
+ 		"plaintext": false
  	},
  	"server_address": "example.com:443",
  	"service_name": "com.example.proto.example.FooService",
@@ -193,7 +193,7 @@ Header: grpc-Authorization: auth-token
 		"verbose": true,
 		"import_path": "import/src",
 		"service_proto_path": "path/to/proto/service/file/services.proto",
-		"insecure": false
+		"plaintext": false
 	},
 	"server_address": "example.com:443",
 	"service_name": "com.example.proto.example.FooService",
@@ -215,7 +215,7 @@ curl --location --request POST 'localhost:3000/service/execute' \
  		"verbose": true,
  		"import_path": "import/src",
  		"service_proto_path": "path/to/proto/service/file/services.proto",
- 		"insecure": false
+ 		"plaintext": false
  	},
  	"server_address": "example.com:443",
  	"service_name": "com.example.proto.example.FooService",

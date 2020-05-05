@@ -17,7 +17,7 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     builder = GrpcurlBuilder.new(import_path: DEFAULT_IMPORT_PATH,
                                  service_proto_path: DEFAULT_PROTO_PATH,
                                  data: DEFAULT_DATA,
-                                 insecure: false,
+                                 plaintext: false,
                                  server_address: DEFAULT_SERVER_ADDRESS,
                                  service_name: DEFAULT_SERVICE_NAME,
                                  method_name: DEFAULT_METHOD_NAME,
@@ -31,7 +31,7 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     assert_equal DEFAULT_SERVICE_NAME, builder.service_name
     assert_equal DEFAULT_METHOD_NAME, builder.method_name
     assert_equal DEFAULT_HEADERS, builder.headers
-    assert_equal false, builder.insecure
+    assert_equal false, builder.plaintext
     assert_equal true, builder.verbose_output
     assert_equal [], builder.hints
     default_assist_options = { 'auto_format_dates' => 'true', 'test_option' => 'false' }
@@ -66,7 +66,7 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
                                      'VERBOSE': 'false',
                                      'IMPORT_PATH': DEFAULT_IMPORT_PATH,
                                      'SERVICE_PROTO_PATH': DEFAULT_PROTO_PATH,
-                                     'INSECURE': 'true',
+                                     'PLAINTEXT': 'true',
                                      'GAS_OPTIONS': 'option1:true;option2:1'}
     params = {
         'service_name' => DEFAULT_SERVICE_NAME,
@@ -81,7 +81,7 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     assert_equal DEFAULT_SERVICE_NAME, builder.service_name
     assert_equal DEFAULT_METHOD_NAME, builder.method_name
     assert_equal DEFAULT_HEADERS, builder.headers
-    assert_equal true, builder.insecure
+    assert_equal true, builder.plaintext
     assert_equal false, builder.verbose_output
     assert_equal [], builder.hints
     expected_options = {'option1' => 'true', 'option2' => '1'}
@@ -158,28 +158,28 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     assert_not builder.hints.include?(BuilderHints::SERVICE_PROTO_PATH_LEADING), "Did not expect hint to be present: #{builder.hints}"
   end
 
-  test 'should handle insecure flag' do
+  test 'should handle plaintext flag' do
     # Option present
-    builder = build(:grpcurl_builder, insecure: true)
+    builder = build(:grpcurl_builder, plaintext: true)
     expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -plaintext  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
     assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
 
     # Option omitted
-    builder = build(:grpcurl_builder, insecure: false)
+    builder = build(:grpcurl_builder, plaintext: false)
     expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
     assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
   end
 
-  test 'insecure hints' do
-    builder = build(:grpcurl_builder, insecure: true)
+  test 'plaintext hints' do
+    builder = build(:grpcurl_builder, plaintext: true)
     assert_empty builder.hints
     builder.build(BuilderMode::COMMAND)
-    assert builder.hints.include?(BuilderHints::INSECURE_FLAG), "Proper hint for build not present: #{builder.hints}"
+    assert builder.hints.include?(BuilderHints::PLAINTEXT_FLAG), "Proper hint for build not present: #{builder.hints}"
 
-    builder = build(:grpcurl_builder, insecure: false)
+    builder = build(:grpcurl_builder, plaintext: false)
     assert_empty builder.hints
     builder.build(BuilderMode::COMMAND)
-    assert_not builder.hints.include?(BuilderHints::INSECURE_FLAG), "Did not expect hint to be present: #{builder.hints}"
+    assert_not builder.hints.include?(BuilderHints::PLAINTEXT_FLAG), "Did not expect hint to be present: #{builder.hints}"
   end
 
   test 'should handle data' do

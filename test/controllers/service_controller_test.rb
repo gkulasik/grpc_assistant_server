@@ -20,7 +20,7 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
                                    "HTTP_GRPC_META_verbose": "true",
                                    "HTTP_GRPC_META_import_path": "/import/path",
                                    "HTTP_GRPC_META_service_proto_path": "some/example/examples.proto",
-                                   "HTTP_GRPC_META_insecure": "true" }
+                                   "HTTP_GRPC_META_plaintext": "true" }
 
   DEFAULT_REQ_HEADERS = { "HTTP_NON_GRPC_OTHER": "some value",
                           "HTTP_GRPC_REQ_AUTHORIZATION": "auth-token" }
