@@ -28,9 +28,9 @@ class GrpcurlExecutorTest < ActiveSupport::TestCase
 
     builder = build(:grpcurl_builder)
     result = GrpcurlExecutor.execute(builder, TestOpen3)
-    expected = GrpcurlResult.new({command: builder.build, raw_output: "stdout", raw_errors: "stderr"})
+    expected = GrpcurlResult.new({command: builder.build, raw_output: "stdout", raw_errors: "stderr", hints: builder.hints})
     # Use API response was way to ensure the same object is generated/returned
-    assert_equal expected.to_api_response, result.to_api_response
+    assert_equal expected.to_text_response, result.to_text_response
   end
 
 end

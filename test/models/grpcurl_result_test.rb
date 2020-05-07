@@ -1,7 +1,6 @@
 require 'test_helper'
 class GrpcurlResultTest < ActiveSupport::TestCase
 
-
   test 'init parses response when proper' do
     example_result = build(:grpcurl_result_success)
     success_result = GrpcurlResult.new({ command: example_result.command, raw_output: example_result.raw_output, raw_errors: nil })
@@ -52,7 +51,7 @@ class GrpcurlResultTest < ActiveSupport::TestCase
     assert_equal expected_three, result.parse_raw_output("test test \ntest [] {test-data} \n #{GrpcurlResult::GRPC_RESPONSE_START_MARKER}\n{\"test\":[\"foo\",\"bar\"], \"foo\":\"bar\"\n}\n#{GrpcurlResult::GRPC_RESPONSE_END_MARKER}")
   end
 
-  test 'to api response - success' do
+  test 'to text response - success' do
     min_success_response_string = "
         Response contents:
         {
@@ -61,16 +60,20 @@ class GrpcurlResultTest < ActiveSupport::TestCase
 
         Response trailers received:
         "
-    result = build(:grpcurl_result_success, raw_output: min_success_response_string)
-    assert result.to_api_response.include?("### Parsed Response ###")
-    assert result.to_api_response.include?("\"foo\": \"BAR\"")
-    assert result.to_api_response.include?("### Command Used ###")
-    assert result.to_api_response.include?("test-command")
-    assert result.to_api_response.include?("### Full Response ###")
-    assert result.to_api_response.include?("Response contents:")
+    result = build(:grpcurl_result_success, raw_output: min_success_response_string, hints: ["foo-hint"])
+    result_api_response = result.to_text_response
+    assert result_api_response.include?("### Parsed Response ###"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("\"foo\": \"BAR\""), "Got response: #{result_api_response}"
+    assert result_api_response.include?("### Command Used ###"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("test-command"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("\"foo\": \"BAR\""), "Got response: #{result_api_response}"
+    assert result_api_response.include?("### Hints ###"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("- foo-hint"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("### Full Response ###"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("Response contents:"), "Got response: #{result_api_response}"
   end
 
-  test 'to api response - failure' do
+  test 'to text response - failure' do
     result = build(:grpcurl_result_failure)
     expected = "### Error ###
 
@@ -80,7 +83,27 @@ errors
 test-command
 
 "
-    assert_equal expected, result.to_api_response
+    assert_equal expected, result.to_text_response
   end
 
+  test 'to json response - success' do
+    min_success_response_string = "
+        Response contents:
+        {
+            \"foo\": \"BAR\"
+        }
+
+        Response trailers received:
+        "
+    result = build(:grpcurl_result_success, raw_output: min_success_response_string, hints: ["foo-hint"])
+    result_api_response = result.to_json_response
+    expected_response = { "foo" => "BAR" }
+    assert_equal expected_response, result_api_response
+  end
+
+  test 'to json response - failure' do
+    result = build(:grpcurl_result_failure)
+    expected = { :error => "errors" }
+    assert_equal expected, result.to_json_response
+  end
 end

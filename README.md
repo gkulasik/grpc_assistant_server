@@ -1,59 +1,86 @@
 # GRPC Assistant Server (GAS)
 
-## What it is:
-Dockerized HTTP/JSON proxy server for local GRPC development leveraging grpcurl [https://github.com/fullstorydev/grpcurl].
+Dockerized HTTP/JSON proxy server for local grpc development without the struggles of making grpc requests, leveraging gRPCurl [https://github.com/fullstorydev/grpcurl].
 
 ## What it can do
-- Generate valid, ready to copy and paste, grpcurl commands from a request using JSON.
-- Execute and parse grpc commands within a docker container and return a formatted response.
+- Generate valid, ready to copy and paste, grpcurl commands from a request using HTTP/JSON.
+- Execute and parse grpc requests within a docker container and return a formatted response (plaintext or JSON).
+- Perform auto-formatting of select request body fields to reduce proto format dependence (ex. Dates and Timestamps).
 
 ##  What are the benefits?
-- Free choice of UI (choose your http client such as Postman, Paw, etc.) and all the features they support such as saving requests, variables, and testing.
-- Minimal setup required due to being fully dockerized (server and grpcurl).
-- Craft GRPC request bodies and view responses in JSON format.
-- Leverage a trusted base with grpcurl. Easily works with grpc servers, no tls or server compatibility issues like other grpc tools may have.
-- Requests are easily portable and transferable due to the text based nature of grpcurl or equivalent curl.
+- Free choice of UI (choose your HTTP client such as Postman, Paw, etc.) and all the features they support such as saving requests, variables, and testing.
+- Minimal setup required (docker).
+- Craft grpc request bodies and view responses in familiar HTTP/JSON format.
+- Can auto-format some specific grpc types like Date or Timestamp using familiar JSON types/structures.
+- Leverage a trusted base with grpcurl. Easily works with grpc servers, with or without TLS, and no potential server compatibility issues like other grpc tools may have.
+- Requests are easily portable and transferable due to the text-based nature of grpcurl and/or equivalent curl.
 - No changes are required to existing proto files or servers like some other grpc tools.
+- Provides best-effort hints to help debug grpc call failures.
 
-## How is it built
-The service uses Rails 6 API and grpcurl inside of a docker container. A second container containing a database is generated but currently is unused.
+## Quickstart
 
-The current setup uses Docker and Docker Compose to launch the service locally requiring no environment setup.
+1. Install Docker for Mac (or equivalent for Windows/Linux).
+2. Download the code via git clone: `git clone https://github.com/gkulasik/grpc_assistant_server.git`. This will create a new directory called `grpc_assistant_server` with all the necessary files.
+3. `cd` into the new `grpc_assistant_server directory` and run `./start_grpc_assistant_server.sh`. The first run may take some time as the docker containers are pulled from DockerHub or built locally. Subsequent runs will be substantially faster.
+4. The service should be up and running!
 
-Prebuilt containers at Docker Hub (Still requires that the git repo is pulled): https://hub.docker.com/repository/docker/gkulasik/grpc_assistant_server
+For a quicker start, copy and paste the curl below into your favorite HTTP/JSON client to get started! The example will not work out of the box due to the limitations of grpc. Header values need to be adjusted, see `Setup` for additional information.
+
+If running against a remote server use that server's address for the `GRPC_META_server_address`. If running locally use `host.docker.internal:{local_service_port_#}`.
+
+#### Sample request
+```
+curl --request POST 'localhost:3000/service/{{protobuf_service}}/execute/{{protobuf_method}}' \
+--header 'GRPC_REQ_authorization: auth-token' \
+--header 'GRPC_META_import_path: {{path_to_protos_on_local_machine}}' \
+--header 'GRPC_META_service_proto_path: {{path_to_proto_service_file_within_protos_directory}}' \
+--header 'GRPC_META_plaintext: false' \
+--header 'GRPC_META_verbose: true' \
+--header 'GRPC_META_server_address: {{grpc_server_address}}' \
+--data-raw '{
+    "field1": "value1",
+    "field2": "value2"
+}
+'
+```
+
+#### Sample response
+```
+### Parsed Response ### 
+
+{
+    "someObject": {
+        "field": "value"
+    },
+    "foo": "bar"
+}
+
+
+### Command Used ### 
+
+grpcurl  -import-path 'import/src'  -proto 'path/to/proto/service/file/services.proto'  -H 'AUTHORIZATION:auth-token'  -v  -d '{"foo":1,"bar":"test"}'  example.com:443  com.example.proto.example.FooService/ExampleMethod 
+
+### Hints ###
+
+...
+
+### Full Response ### 
+
+Resolved method descriptor:
+// Some method description
+rpc ExampleMethod ( com.example.proto.example.FooService.ExampleMethod ) returns ( com.example.proto.example.FooService.ExampleResponse );
+
+...
+```
+
 
 ##  Setup
 
-Download the code via git clone: `git clone https://github.com/gkulasik/grpc_assistant_server.git`
-
-This will create a new directory called grpc_assistant_server with all the necessary files. 
-
-### Start the service
-
-`./start_grpc_assistant_server.sh`
-
-Will start the Rails server, Postgres DB, and run migrations. Access from localhost:3000 by default. On first run the docker containers will be pulled.
-
-### Stop the service
-
-`./stop_grpc_assistant_server.sh`
-
-Will shutdown and remove the server and DB containers.
-
-### Update the service
-
-`./update_grpc_assistant_server.sh`
-
-Will stop the service, git pull the latest changes, and repull the docker container.
-
 ### Set the protos source
-The service and grpcurl need to know where the proto files are. The docker container **cannot** see files outside of its local directory. There are two options to provide the service with access to local proto files. Getting the protos config right is the most important part to ensure the service works correctly.
+The service and grpcurl need to know where the proto files are located. The docker container **cannot** see files outside of its local directory. There are two options to provide the service with access to local proto files. Getting the protos config right is the most important part to ensure the service works correctly!
 
-#### Option 1
-Copy proto files/directories into the directory created by git clone. Docker and the service will have access to its directory and any child directories. grpcurl commands will only work within the service directory from the command line due to the proto file paths being part of the command.
-
-#### Option 2 (Preferred)
-Provide access to directories outside of the service directory via docker-compose volumes. This is already partially configured in the docker-compose.yml file.
+#### Option 1 (Ideal)
+Provide access to directories outside of the service directory via docker-compose volumes. This is already configured in the docker-compose.yml file for macOS.
 
 ```
 docker-compose.yml
@@ -62,37 +89,38 @@ docker-compose.yml
       - /Users:/app/Users
 ```
 
-With the default config (configured for macOS) the /Users directory will be passed to the docker container, passing access to nearly the whole system including the protos. More granularity is possible for those who choose to tinker with the volumes and related request body options.import_path. 
+With the default configuration (for macOS) the /Users directory will be passed to the docker container granting access to the protos. Then the paths used within the docker container will match the host system. More granularity is possible for those who choose to tinker with the volumes and related request header GRPC_META_import_path. 
 
-grpcurl commands will work from the top level `/` directory on macOS using the default config.
+grpcurl commands should work anywhere within the directory structure with the default config.
 
-Example of how to set up a request's options.import_path with the default docker-compose.yml volumes. Assuming the protos are located in foouser's projects directory.
+Below is an example of how to set up a request's GRPC_META_import_path with the default docker-compose.yml volumes. Assuming the protos are located in foouser's projects directory and the protos directory structure starts in the /src directory.
 
 ```
-Request body sample:
-"options": {
-        	...
- 		"import_path": "Users/foouser/projects/protos/src/",
- 		...
- 	},
-	...
+Request header sample:
+--header 'GRPC_META_import_path: /Users/foouser/projects/protos/src/'
 ```
- 	
-This would mean that the protos directory structure starts in the /src directory.  
 
-Ideally, volumes and import_path work so that the command returned in a response will work to be copied and pasted without any edits required to the command. 
+Ideally, volumes and import_path work so that the command returned in a response body will work when copied and pasted to the host machine with no edits required to the command. 
 
-## Configuration
+#### Option 2
+Copy proto files/directories into the directory created by git clone. Docker and the service will have access to its directory and any child directories. 
+
+With this option, grpcurl commands will work within the docker container but may not work on the host system.
+
+
+###  Docker/Compose setup
 
 The primary config is handled in the **docker-compose.yml** file.
 
 - The port that the server runs at can be adjusted if you are using port 3000 for other development or services. If changing the port be sure to adjust both the command and ports config.
-- The volumes section needs to be adjusted to allow for the protos to be discovered via Docker volumes. See above in 'Set the protos source' on how to set this up.
+- The volumes section may need to be adjusted for the protos to be discovered via Docker volumes. See above in 'Set the protos source' on how to set this up.
 - All other applicable docker-compose changes are available but shouldn't be necessary for general usage.
 
-### Building the container locally
+#### Building the containers
 
-The docker containers can be built rather then pulled after git pull by editing the docker-compose.yml file.
+Prebuilt containers are available at Docker Hub (Still requires that the git repo is pulled): https://hub.docker.com/repository/docker/gkulasik/grpc_assistant_server
+
+The docker containers can be built locally rather than pulled after cloning the repo by editing the docker-compose.yml file.
 
 Remove `image: gkulasik/grpc_assistant_server...` under `web` and replace with:
 
@@ -102,133 +130,109 @@ Remove `image: gkulasik/grpc_assistant_server...` under `web` and replace with:
        dockerfile: Dockerfile
 ```
 
-Avoid using the update script as it will attempt to pull the container.
+If building locally, avoid using the update script as it will attempt to pull the container.
 
 ## Usage
-There are two primary API endpoints the service provides, `command` and `execute`.
+There are two primary API endpoints the service provides, `command` and `execute`. There are also three primary scripts to operate the service, `start`, `stop`, and `update`.
 
-### General
+### Scripts
+Scripts must be run within the project directory `grpc_assistant_server`.
+
+#### Start the service
+
+`./start_grpc_assistant_server.sh`
+
+Will start the Rails server and run migrations against the internal Sqlite3 DB. Available at localhost:3000 by default. On the first run, the docker containers will be pulled.
+
+#### Stop the service
+
+`./stop_grpc_assistant_server.sh`
+
+Will shutdown and remove the service container.
+
+#### Update the service
+
+`./update_grpc_assistant_server.sh`
+
+Will stop the service, git pull the latest changes, and repull the docker container.
+
+### Requests
 
 server_address, service_name, method_name are all required fields for either request.
 
 Grpcurl tags/attributes supported (mapped GAS -> grpcurl tag):
-- options.verbose [boolean] => -v
-- options.import_path [string] => -import-path
-- options.service_proto_path [string] => -proto
-- options.insecure [boolean] => -plaintext
-- server_address [string] => address
-- service_name [string] => symbol
-- method_name [string] => symbol
-- data [object] => -d
-- HTTP headers [map] => -H
 
-To pass in headers (grpcurl -H tag) regular HTTP headers may be used. The service will look for 'GRPC' intended headers which are any HTTP headers prefixed with 'HTTP_GRPC_{your header name}'. The 'HTTP_GRPC_' prefix will be removed during processing.
+Headers:
+- GRPC_META_server_address [string] => address
+- GRPC_META_verbose [boolean] => -v
+- GRPC_META_import_path [string] => -import-path
+- GRPC_META_service_proto_path [string] => -proto
+- GRPC_META_plaintext [boolean] => -plaintext
+- GRPC_META_max_time [int] => -max-time
+- GRPC_META_connect_timeout [int] => -connect-timeout
+- GRPC_META_max_message_size [int] => -max-msg-sz
+- GRPC_META_gas_options [string-hash] => None, GAS custom field
+- HTTP headers (GRPC_REQ_{header_name}) [map] => -H
 
-Note: In Postman HTTP_ is already prefixed to headers automatically and Postman does its own automatic header adjustments. Example header key with Postman could look like this: 'GRPC_Authorization' or like 'grpc-Authorization' (both will be handled correctly).
+Path variables (Ex. path: /service/:service_name/execute/:method_name):
+- service_name (in path) [string] => symbol
+- method_name (in path) [string] => symbol
+
+Body:
+- data (request body) [object] => -d
+
+Grpc metadata is passed in via **headers** prefixed with 'GRPC_META_' (ex. 'GRPC_META_import_path'). Regular request headers to be passed to grpcurl are prefixed with 'GRPC_REQ_' (ex. 'GRPC_REQ_Authorization'). The prefixes are removed during processing, these prefixes are only used to locate GRPC intended headers.
+
+Note: Rails automatically upper cases header text and removes '-' in favor of '_'. So `GRPC_REQ_Authorization-key` and `GRPC_REQ_AUTHORIZATION_KEY` are equivalent. This upper casing will transfer to the grpcurl request. HTTP headers are case insensitive per the HTTP spec so this should not affect HTTP/JSON or grpc operation.
 
 More tags/options support may be added in the future. These are currently all I've needed so far for my development.
 
-### Command
-The command endpoint will generate a grpcurl command based on the inputs. This command can then be copy and pasted into a command line on a local/different machine with grpcurl. Nothing is executed with this endpoint.
+### Command Request
+The command endpoint will generate a grpcurl command based on the inputs. This command can then be copied and pasted into a command line on a local/different machine with grpcurl. Nothing is executed with this endpoint.
 
 #### Command example request
 ```
-POST localhost:3000/service/command
-Header:  grpc-Authorization: auth-token
-{
-	"options": {
-		"verbose": true,
-		"import_path": "import/src",
-		"service_proto_path": "path/to/proto/service/file/services.proto",
-		"insecure": false
-	},
-	"server_address": "example.com:443",
-	"service_name": "com.example.proto.example.FooService",
-	"method_name": "ExampleMethod",
-	"data": {
-		"foo": 1,
-		"bar": "test"
-	}
-}
-```
-Equivalent curl:
-```
-curl --location --request POST 'localhost:3000/service/command' \
- --header 'grpc-Authorization: auth-token' \
- --header 'Content-Type: application/json' \
- --data-raw '{
- 	"options": {
- 		"verbose": true,
- 		"import_path": "import/src",
- 		"service_proto_path": "path/to/proto/service/file/services.proto",
- 		"insecure": false
- 	},
- 	"server_address": "example.com:443",
- 	"service_name": "com.example.proto.example.FooService",
- 	"method_name": "ExampleMethod",
- 	"data": {
+curl --request POST 'localhost:3000/service/com.example.proto.example.FooService/command/ExampleMethod' \
+--header 'GRPC_REQ_authorization: auth-token' \
+--header 'GRPC_META_import_path: /import/src' \
+--header 'GRPC_META_service_proto_path: path/to/proto/service/file/services.proto' \
+--header 'GRPC_META_plaintext: false' \
+--header 'GRPC_META_verbose: true' \
+--header 'GRPC_META_server_address: example.com:443' \
+--data-raw '{
  		"foo": 1,
  		"bar": "test"
- 	}
- }'
-``` 
-
+}
+'
+```
 
 #### Command example response
-A ready to copy and paste response is returned (plain text response to allow for proper escaping).
+A ready to copy and paste response is returned (plaintext response to allow for proper escaping).
 ```
-grpcurl  -import-path import/src  -proto path/to/proto/service/file/services.proto  -H 'AUTHORIZATION:auth-token'  -v  -d '{"foo":1,"bar":"test"}' example.com:443  com.example.proto.example.FooService/ExampleMethod 
+grpcurl  -import-path /import/src  -proto path/to/proto/service/file/services.proto  -H 'AUTHORIZATION:auth-token'  -v  -d '{"foo":1,"bar":"test"}' example.com:443  com.example.proto.example.FooService/ExampleMethod 
 ```
 
-
-### Execute
+### Execute Request
 The execute endpoint will generate a grpcurl command based on inputs and **execute the command** using grpcurl inside of the docker container.
 
 #### Execute example request
 ```
-POST localhost:3000/service/execute
-Header: grpc-Authorization: auth-token
-{
-	"options": {
-		"verbose": true,
-		"import_path": "import/src",
-		"service_proto_path": "path/to/proto/service/file/services.proto",
-		"insecure": false
-	},
-	"server_address": "example.com:443",
-	"service_name": "com.example.proto.example.FooService",
-	"method_name": "ExampleMethod",
-	"data": {
-		"foo": 1,
-		"bar": "test"
-	}
-}
-```
-
-Equivalent curl:
-```
-curl --location --request POST 'localhost:3000/service/execute' \
- --header 'grpc-Authorization: auth-token' \
- --header 'Content-Type: application/json' \
- --data-raw '{
- 	"options": {
- 		"verbose": true,
- 		"import_path": "import/src",
- 		"service_proto_path": "path/to/proto/service/file/services.proto",
- 		"insecure": false
- 	},
- 	"server_address": "example.com:443",
- 	"service_name": "com.example.proto.example.FooService",
- 	"method_name": "ExampleMethod",
- 	"data": {
+curl --request POST 'localhost:3000/service/com.example.proto.example.FooService/execute/ExampleMethod' \
+--header 'GRPC_REQ_authorization: auth-token' \
+--header 'GRPC_META_import_path: /import/src' \
+--header 'GRPC_META_service_proto_path: path/to/proto/service/file/services.proto' \
+--header 'GRPC_META_plaintext: false' \
+--header 'GRPC_META_verbose: true' \
+--header 'GRPC_META_server_address: example.com:443' \
+--data-raw '{
  		"foo": 1,
  		"bar": "test"
- 	}
- }'
+}
+'
 ```
 
 #### Execute example response success
-Response contains the parsed response (extracted from the full output below), the command used (ready to copy and paste), and the full output of the command for additional debugging. This is all returned as plain text to allow for proper string escaping.
+The response contains the parsed grpc response (extracted from the full output of grpcurl), the command used (ready to copy and paste), hints for the request (if applicable), and the full output of the execution for additional debugging. By default, this is all returned as plaintext to allow for proper string escaping. See below for how to get GAS to return a JSON response.
 
 Success is indicated via the HTTP status code 200.
 
@@ -245,7 +249,11 @@ Success is indicated via the HTTP status code 200.
 
 ### Command Used ### 
 
-grpcurl  -import-path import/src  -proto path/to/proto/service/file/services.proto  -H 'AUTHORIZATION:auth-token'  -v  -d '{"foo":1,"bar":"test"}'  example.com:443  com.example.proto.example.FooService/ExampleMethod 
+grpcurl  -import-path /import/src  -proto path/to/proto/service/file/services.proto  -H 'AUTHORIZATION:auth-token'  -v  -d '{"foo":1,"bar":"test"}'  example.com:443  com.example.proto.example.FooService/ExampleMethod 
+
+### Hints ###
+
+  - Leading slash on import_path detected. Execution will remove this leading slash automatically but keep it for the output command. No action required.
 
 ### Full Response ### 
 
@@ -277,6 +285,36 @@ date: Fri, 10 Apr 2020 18:39:38 GMT
 Sent 1 request and received 1 response
 ```
 
+#### Execute example request with JSON response
+
+Notice: The `.json` appended to the URI. This changes the response type from plaintext to JSON.
+
+```
+curl --request POST 'localhost:3000/service/com.example.proto.example.FooService/execute/ExampleMethod.json' \
+--header 'GRPC_REQ_authorization: auth-token' \
+--header 'GRPC_META_import_path: /import/src' \
+--header 'GRPC_META_service_proto_path: path/to/proto/service/file/services.proto' \
+--header 'GRPC_META_plaintext: false' \
+--header 'GRPC_META_verbose: true' \
+--header 'GRPC_META_server_address: example.com:443' \
+--data-raw '{
+ 		"foo": 1,
+ 		"bar": "test"
+}
+'
+```
+
+The response will return only the JSON response body. This can be useful for automation flows and initial FE development.
+
+```
+{
+    "someObject": {
+        "field": "value"
+    },
+    "foo": "bar"
+}
+```
+
 #### Execute example failure
 In the event of a failure response, the error from the grpcurl request will be captured and returned along with the command used for inspection.
 
@@ -287,10 +325,102 @@ Failure is indicated with the HTTP status code 400.
 
 Error invoking method \"com.example.proto.FooService/FakeMethod\": service \"com.example.proto.FooService\" does not include a method named \"FakeMethod\"\n"
 
+### Hints ###
+
+  - Leading slash on import_path detected. Execution will remove this leading slash automatically but keep it for the output command. No action required.
+  - Leading slash on service_proto_path detected. grpcurl may fail to locate protos.
+
 ### Command Used ###
 
-grpcurl  -import-path Users/myuser/projects/proto/src/  -proto example/proto/foo/service_api.proto  -H 'AUTHORIZATION:auth-token'  -v  -d '{"foo":"bar"}'  example.com:443  com.example.proto.FooService/FakeMethod
+grpcurl  -import-path /Users/myuser/projects/proto/src/  -proto example/proto/foo/service_api.proto  -H 'AUTHORIZATION:auth-token'  -v  -d '{"foo":"bar"}'  example.com:443  com.example.proto.FooService/FakeMethod
+```
+### Hints
+
+GAS will attempt to provide hints in the execute command response (plaintext only). The hints are a tool used to help the user understand why a request may have failed or what under-the-hood processing GAS is doing to make grpc requests work that the user should be aware of.
+
+Some examples of hints supported (not exhaustive):
+- plaintext flag check - will warn the user that the request may fail against remote servers but should be fine against local servers.
+- Invalid JSON check - will warn the user if the input request body was invalid JSON.
+- Warn user if GAS is making automatic adjustments in the background the user should know about.
+
+### Autoformatting
+
+GAS can auto-format Date/Time fields into Protobuf format, saving time and effort typing out specific JSON Date/Time format.
+
+Typical Date/Time Protobuf format:
+
+Protobuf Date:
+```
+{
+    "year": 2000,
+    "month": 12,
+    "day": 31
+}
 ```
 
+Protobuf Timestamp:
+```
+{
+    "seconds":1588532731,
+    "nanos":560100000
+ }
+```
+
+GAS allows the use of standard ISO8601 date format, which it can convert into either Protobuf Date or Timestamp. 
+
+This feature can be enabled with the header `GRPC_META_gas_options: auto_format_dates:true`. The value of the header is a `key:value` string separated by semi-colons.
+
+Usage:
+
+```
+curl --request POST 'localhost:3000/service/com.example.proto.example.FooService/command/ExampleMethod.json' \
+--header 'GRPC_REQ_authorization: auth-token' \
+--header 'GRPC_META_import_path: /import/src' \
+--header 'GRPC_META_service_proto_path: path/to/proto/service/file/services.proto' \
+--header 'GRPC_META_plaintext: false' \
+--header 'GRPC_META_verbose: true' \
+--header `GRPC_META_gas_options: auto_format_dates:true` \
+--header 'GRPC_META_server_address: example.com:443' \
+--data-raw '{
+                "timestamp_no_nanos": "2020-05-02T23:39:21Z",
+                "timestamp_date": "2020-05-02",
+                "timestamp_with_nanos": "2020-05-02T23:39:21.560Z"
+}
+'
+```
+
+Command generated:
+```
+grpcurl  -import-path '/import/src'  -proto path/to/proto/service/file/services.proto'  -H 'AUTHORIZATION:auth-token'  -v  -d '{"timestamp_no_nanos":{"seconds":1588462761,"nanos":0},"timestamp_date":{"year":2020,"month":5,"day":2},"timestamp_with_nanos":{"seconds":1588462761,"nanos":560000000}}'  example.com:443  com.example.proto.example.FooService/ExampleMethod 
+```
+
+Notice in particular the body that was generated from that request (extract below):
+```
+{
+    "timestamp_no_nanos": {
+        "seconds": 1588462761,
+        "nanos": 0
+    },
+    "timestamp_date": {
+        "year": 2020,
+        "month": 5,
+        "day": 2
+    },
+    "timestamp_with_nanos": {
+        "seconds": 1588462761,
+        "nanos": 560000000
+    }
+}
+```
+
+## Compatibility
+
+The development of this tool has been on macOS. It has been built to be OS/environment agnostic. Non-macOS users should expect paths/directory structure and docker-compose setup will differ for other operating systems.
+
+## How is it built
+The service uses Rails 6 API and grpcurl inside of a docker container.
+
+The current setup uses Docker and Docker Compose to launch the service locally requiring no environment setup.
+
 ## Credit
-This project wouldn't be possible if not for the great work of grpcurl [https://github.com/fullstorydev/grpcurl].
+This project wouldn't be possible if not for the great work of gRPCurl [https://github.com/fullstorydev/grpcurl].

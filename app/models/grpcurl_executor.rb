@@ -7,14 +7,18 @@ class GrpcurlExecutor
   # @param [Module] module to use for execution - used for test injection
   # @return [GrpcurlResult] command result
   def self.execute(grpcurl_builder, execution_module = Open3)
-    command = grpcurl_builder.build()
-    puts "Command being executed: #{command}"
-    execution_module.popen3(command) do |stdin, stdout, stderr, wait_thr|
+    command = grpcurl_builder.build(BuilderMode::COMMAND)
+    execute = grpcurl_builder.build(BuilderMode::EXECUTE)
+    puts "Command being executed: #{execute}"
+    execution_module.popen3(execute) do |stdin, stdout, stderr, wait_thr|
       output = stdout.read
       errors = stderr.read
       puts "Output received: #{output}"
       puts "Errors received: #{errors}"
-     GrpcurlResult.new({command: command, raw_output: output, raw_errors: errors})
+      GrpcurlResult.new(params = { command: command,
+                                   raw_output: output,
+                                   raw_errors: errors,
+                                   hints: grpcurl_builder.hints })
     end
   end
 

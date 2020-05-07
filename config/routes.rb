@@ -1,5 +1,4 @@
 Rails.application.routes.draw do
-  post 'service/execute'
-  post 'service/command'
-  # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
+  post 'service/*service_name/execute/:method_name', to: 'service#execute', defaults: { format: 'text' }, as: :execute
+  post 'service/*service_name/command/:method_name', to: 'service#command', defaults: { format: 'text' }, as: :command
 end

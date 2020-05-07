@@ -1,9 +1,11 @@
+require 'json'
+
 class GrpcurlResult
   attr_accessor :command, # @type [String] command
                 :raw_output, # @type [String] raw_output
                 :raw_errors, # @type [String] raw_errors
-                :clean_response # @type [String] clean_response
-
+                :clean_response, # @type [String] clean_response
+                :hints # @type [Array<String>] hints
 
   GRPC_RESPONSE_START_MARKER = 'Response contents:'
   GRPC_RESPONSE_END_MARKER = 'Response trailers received:'
@@ -12,6 +14,7 @@ class GrpcurlResult
   ERROR_HEADER = '### Error ###'
   FULL_RESPONSE_HEADER = '### Full Response ###'
   COMMAND_HEADER = '### Command Used ###'
+  HINTS_HEADER = '### Hints ###'
 
   # Init with hash - accepted params:
   # @param [String] command
@@ -23,6 +26,7 @@ class GrpcurlResult
     @raw_output = params[:raw_output]
     @raw_errors = params[:raw_errors]
     @clean_response = params[:raw_errors].present? ? nil : parse_raw_output(params[:raw_output])
+    @hints = params[:hints] || []
   end
 
   # Helper to get the response/parse again if for some reason initialize did not parse the output the first time.
@@ -67,11 +71,24 @@ class GrpcurlResult
 
   # Convert GrpcResult into an API response with relevant information
   # @return [String]
-  def to_api_response
+  def to_text_response
+    line_break = "\n\n"
     response = is_success? ? "#{RESPONSE_PARSED_HEADER} \n#{get_response}" : ""
-    errors = is_success? ? "" : "#{ERROR_HEADER}\n\n#{@raw_errors}"
+    errors = is_success? ? "" : "#{ERROR_HEADER}#{line_break}#{@raw_errors}"
     full_response = is_success? ? "#{FULL_RESPONSE_HEADER}\n#{@raw_output}" : ""
-    command = "\n"+ "#{COMMAND_HEADER}\n\n#{@command}" + "\n\n"
-    response + errors +  command + full_response
+    command = "\n#{COMMAND_HEADER}#{line_break}#{@command}#{line_break}"
+    formatted_hints = @hints.map { |h| "\n  - #{h}" }.join("")
+    hints = @hints.any? ? "#{HINTS_HEADER}\n#{formatted_hints}#{line_break}" : ""
+    response + errors + command + hints + full_response
+  end
+
+  # Parse response to JSON (hash)
+  # @return [Hash]
+  def to_json_response
+    if is_success?
+      JSON.parse(get_response)
+    else
+      { error: @raw_errors }
+    end
   end
 end
