@@ -5,26 +5,26 @@ Dockerized HTTP/JSON proxy server for local grpc development without the struggl
 ## What it can do
 - Generate valid, ready to copy and paste, grpcurl commands from a request using HTTP/JSON.
 - Execute and parse grpc requests within a docker container and return a formatted response (plaintext or JSON).
-- Perform auto formatting of select request body fields to reduce proto format dependence (ex. Dates and Timestamps).
+- Perform auto-formatting of select request body fields to reduce proto format dependence (ex. Dates and Timestamps).
 
 ##  What are the benefits?
-- Free choice of UI (choose your http client such as Postman, Paw, etc.) and all the features they support such as saving requests, variables, and testing.
+- Free choice of UI (choose your HTTP client such as Postman, Paw, etc.) and all the features they support such as saving requests, variables, and testing.
 - Minimal setup required (docker).
 - Craft grpc request bodies and view responses in familiar HTTP/JSON format.
 - Can auto-format some specific grpc types like Date or Timestamp using familiar JSON types/structures.
-- Leverage a trusted base with grpcurl. Easily works with grpc servers, no tls or server compatibility issues like other grpc tools may have.
-- Requests are easily portable and transferable due to the text based nature of grpcurl and/or equivalent curl.
+- Leverage a trusted base with grpcurl. Easily works with grpc servers, with or without TLS, and no potential server compatibility issues like other grpc tools may have.
+- Requests are easily portable and transferable due to the text-based nature of grpcurl and/or equivalent curl.
 - No changes are required to existing proto files or servers like some other grpc tools.
 - Provides best-effort hints to help debug grpc call failures.
 
-## Quick start
+## Quickstart
 
 1. Install Docker for Mac (or equivalent for Windows/Linux).
 2. Download the code via git clone: `git clone https://github.com/gkulasik/grpc_assistant_server.git`. This will create a new directory called `grpc_assistant_server` with all the necessary files.
 3. `cd` into the new `grpc_assistant_server directory` and run `./start_grpc_assistant_server.sh`. The first run may take some time as the docker containers are pulled from DockerHub or built locally. Subsequent runs will be substantially faster.
 4. The service should be up and running!
 
-For a quicker start, copy and paste the curl below into your favorite HTTP/JSON client to get started! The example will not work out of the box due to the limitations of grpc. Headers values need to be adjusted, see `Setup` for additional information.
+For a quicker start, copy and paste the curl below into your favorite HTTP/JSON client to get started! The example will not work out of the box due to the limitations of grpc. Header values need to be adjusted, see `Setup` for additional information.
 
 If running against a remote server use that server's address for the `GRPC_META_server_address`. If running locally use `host.docker.internal:{local_service_port_#}`.
 
@@ -100,7 +100,7 @@ Request header sample:
 --header 'GRPC_META_import_path: /Users/foouser/projects/protos/src/'
 ```
 
-Ideally, volumes and import_path work so that the command returned in a response will work when copied and pasted to the host machine with no edits required to the command. 
+Ideally, volumes and import_path work so that the command returned in a response body will work when copied and pasted to the host machine with no edits required to the command. 
 
 #### Option 2
 Copy proto files/directories into the directory created by git clone. Docker and the service will have access to its directory and any child directories. 
@@ -120,7 +120,7 @@ The primary config is handled in the **docker-compose.yml** file.
 
 Prebuilt containers are available at Docker Hub (Still requires that the git repo is pulled): https://hub.docker.com/repository/docker/gkulasik/grpc_assistant_server
 
-The docker containers can be built locally rather then pulled after cloning the repo by editing the docker-compose.yml file.
+The docker containers can be built locally rather than pulled after cloning the repo by editing the docker-compose.yml file.
 
 Remove `image: gkulasik/grpc_assistant_server...` under `web` and replace with:
 
@@ -136,13 +136,13 @@ If building locally, avoid using the update script as it will attempt to pull th
 There are two primary API endpoints the service provides, `command` and `execute`. There are also three primary scripts to operate the service, `start`, `stop`, and `update`.
 
 ### Scripts
-Script must be run within the project directory `grpc_assistant_server`.
+Scripts must be run within the project directory `grpc_assistant_server`.
 
 #### Start the service
 
 `./start_grpc_assistant_server.sh`
 
-Will start the Rails server and run migrations against the internal Sqlite3 DB. Available at localhost:3000 by default. On first run the docker containers will be pulled.
+Will start the Rails server and run migrations against the internal Sqlite3 DB. Available at localhost:3000 by default. On the first run, the docker containers will be pulled.
 
 #### Stop the service
 
@@ -188,7 +188,7 @@ Note: Rails automatically upper cases header text and removes '-' in favor of '_
 More tags/options support may be added in the future. These are currently all I've needed so far for my development.
 
 ### Command Request
-The command endpoint will generate a grpcurl command based on the inputs. This command can then be copy and pasted into a command line on a local/different machine with grpcurl. Nothing is executed with this endpoint.
+The command endpoint will generate a grpcurl command based on the inputs. This command can then be copied and pasted into a command line on a local/different machine with grpcurl. Nothing is executed with this endpoint.
 
 #### Command example request
 ```
@@ -345,7 +345,7 @@ Some examples of hints supported (not exhaustive):
 
 ### Autoformatting
 
-GAS can auto format Date/Time fields into Protobuf format, saving time and effort typing out specific JSON Date/Time format.
+GAS can auto-format Date/Time fields into Protobuf format, saving time and effort typing out specific JSON Date/Time format.
 
 Typical Date/Time Protobuf format:
 
@@ -415,7 +415,7 @@ Notice in particular the body that was generated from that request (extract belo
 
 ## Compatibility
 
-Primary development of this tool has been on macOS. It has been built with the intention to be OS/environment agnostic. Non-macOS users should expect paths/directory structure and docker-compose setup will differ for other operating systems.
+The development of this tool has been on macOS. It has been built to be OS/environment agnostic. Non-macOS users should expect paths/directory structure and docker-compose setup will differ for other operating systems.
 
 ## How is it built
 The service uses Rails 6 API and grpcurl inside of a docker container.
