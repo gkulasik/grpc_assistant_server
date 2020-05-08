@@ -125,12 +125,12 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
 
     # Slash present execute
     builder = build(:grpcurl_builder, import_path: '/foobar')
-    expected = 'grpcurl  -import-path \'foobar\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    expected = 'grpcurl  -import-path \'foobar\'  -proto \'path/to/main/service/proto/file.proto\'  -v  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
     assert_equal expected, builder.build(BuilderMode::EXECUTE), DEFAULT_PRESENT_ERROR
 
     # Slash omitted execute
     builder = build(:grpcurl_builder, import_path: 'foobar')
-    expected = 'grpcurl  -import-path \'foobar\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    expected = 'grpcurl  -import-path \'foobar\'  -proto \'path/to/main/service/proto/file.proto\'  -v  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
     assert_equal expected, builder.build(BuilderMode::EXECUTE), DEFAULT_OMITTED_ERROR
   end
 
@@ -192,6 +192,30 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     assert_empty builder.hints
     builder.build(BuilderMode::COMMAND)
     assert_not builder.hints.include?(BuilderHints::PLAINTEXT_FLAG), "Did not expect hint to be present: #{builder.hints}"
+  end
+
+  test 'should handle verbose flag' do
+    # Option present
+    builder = build(:grpcurl_builder, verbose_output: true)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -v  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+
+    # Option omitted
+    builder = build(:grpcurl_builder, verbose_output: false)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
+  end
+
+  test 'should handle verbose flag differently for execute and command' do
+    # Command
+    builder = build(:grpcurl_builder, verbose_output: false)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build(BuilderMode::COMMAND), DEFAULT_PRESENT_ERROR
+
+    # Execute - always enabled to execute for additional debugging and parsing output
+    builder = build(:grpcurl_builder, verbose_output: false)
+    expected = 'grpcurl  -import-path \'path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -v  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build(BuilderMode::EXECUTE), DEFAULT_OMITTED_ERROR
   end
 
   test 'should handle max message size flag' do

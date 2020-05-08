@@ -64,7 +64,7 @@ class GrpcurlResultTest < ActiveSupport::TestCase
     result_api_response = result.to_text_response
     assert result_api_response.include?("### Parsed Response ###"), "Got response: #{result_api_response}"
     assert result_api_response.include?("\"foo\": \"BAR\""), "Got response: #{result_api_response}"
-    assert result_api_response.include?("### Command Used ###"), "Got response: #{result_api_response}"
+    assert result_api_response.include?("### Command ###"), "Got response: #{result_api_response}"
     assert result_api_response.include?("test-command"), "Got response: #{result_api_response}"
     assert result_api_response.include?("\"foo\": \"BAR\""), "Got response: #{result_api_response}"
     assert result_api_response.include?("### Hints ###"), "Got response: #{result_api_response}"
@@ -78,7 +78,7 @@ class GrpcurlResultTest < ActiveSupport::TestCase
     expected = "### Error ###
 
 errors
-### Command Used ###
+### Command ###
 
 test-command
 
