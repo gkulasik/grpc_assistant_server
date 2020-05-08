@@ -1,7 +1,7 @@
 version: '3.6'
 services:
   web:
-    image: gkulasik/grpc_assistant_server:0.2.0
+    image: gkulasik/grpc_assistant_server:latest
     command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
     ports:
       - "3000:3000"
