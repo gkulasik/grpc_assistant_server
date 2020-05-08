@@ -99,7 +99,7 @@ class GrpcurlBuilder
     grpcurl = add_service_proto_path(grpcurl)
     grpcurl = add_headers(grpcurl)
     grpcurl = add_plaintext(grpcurl)
-    grpcurl = add_verbose(grpcurl)
+    grpcurl = add_verbose(grpcurl, builder_mode)
     grpcurl = add_max_message_size(grpcurl)
     grpcurl = add_max_time(grpcurl)
     grpcurl = add_connect_timeout(grpcurl)
@@ -150,8 +150,14 @@ class GrpcurlBuilder
   end
 
   # Adds -v tag to grpcurl command for verbose output
-  def add_verbose(current_string)
-    add_if_present(@verbose_output, current_string, " -v ")
+  # Execute always have verbose output for additional debugging and to allow proper parsing of the response
+  def add_verbose(current_string, builder_mode)
+    variable_override = if builder_mode == BuilderMode::EXECUTE
+                          true
+                        else
+                          @verbose_output
+                        end
+    add_if_present(variable_override, current_string, " -v ")
   end
 
   # Adds -plaintext tag to grpcurl command (no TLS - useful for local)
