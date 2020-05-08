@@ -13,7 +13,7 @@ class GrpcurlResult
   RESPONSE_PARSED_HEADER = '### Parsed Response ###'
   ERROR_HEADER = '### Error ###'
   FULL_RESPONSE_HEADER = '### Full Response ###'
-  COMMAND_HEADER = '### Command Used ###'
+  COMMAND_HEADER = '### Command ###'
   HINTS_HEADER = '### Hints ###'
 
   # Init with hash - accepted params:
