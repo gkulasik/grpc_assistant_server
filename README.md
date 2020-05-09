@@ -144,6 +144,8 @@ Scripts must be run within the project directory `grpc_assistant_server`.
 
 Will start the Rails server and run migrations against the internal Sqlite3 DB. Available at localhost:3000 by default. On the first run, the docker containers will be pulled.
 
+If this script fails rerunning it may help get the application to start successfully.
+
 #### Stop the service
 
 `./stop_grpc_assistant_server.sh`
