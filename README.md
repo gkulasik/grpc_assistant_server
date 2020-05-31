@@ -415,6 +415,10 @@ Notice in particular the body that was generated from that request (extract belo
 }
 ```
 
+## Streaming
+
+GAS supports streaming requests. GAS waits until the stream completes so the response will be delayed (this is a limitation of HTTP).
+
 ## Compatibility
 
 The development of this tool has been on macOS. It has been built to be OS/environment agnostic. Non-macOS users should expect paths/directory structure and docker-compose setup will differ for other operating systems.
