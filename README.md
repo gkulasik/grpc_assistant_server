@@ -19,7 +19,7 @@ Dockerized HTTP/JSON proxy server for local grpc development without the struggl
 
 ## Quickstart
 
-1. Install Docker for Mac (or equivalent for Windows/Linux).
+1. Install Docker for Mac (or equivalent for Windows/Linux). Ensure your docker networking is setup to allow accessing the docker container from your host environment (Mac example https://docs.docker.com/docker-for-mac/networking/#use-cases-and-workarounds).
 2. Download the code via git clone: `git clone https://github.com/gkulasik/grpc_assistant_server.git`. This will create a new directory called `grpc_assistant_server` with all the necessary files.
 3. `cd` into the new `grpc_assistant_server directory` and run `./start_grpc_assistant_server.sh`. The first run may take some time as the docker containers are pulled from DockerHub or built locally. Subsequent runs will be substantially faster.
 4. The service should be up and running!
