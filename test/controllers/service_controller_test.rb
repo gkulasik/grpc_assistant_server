@@ -250,6 +250,25 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
     assert_mock executor_mock
   end
 
+  # Should be able to use as: :json here instead of appending .json but that isn't working for some reason.
+  test 'execute - should handle json format error in response' do
+    stream_response_example = "\nResolved method descriptor:\n// Test method ( .com.example.proto.ExampleMethod ) returns ( .com.example.proto.ExampleResponse );\n\nRequest metadata to send:\nauthorization: auth-token\n\nResponse headers received:\naccess-control-expose-headers: X-REQUEST-UUID\ncontent-type: application/grpc+proto\ndate: Fri, 17 Apr 2020 00:58:49 GMT\nserver: test\nx-request-uuid: 58e3a8c0-xxxx-xxxx-xxxx-e4fbcead7c00\n\nResponse contents:\n-1\nResponse contents:\n-2\nResponse contents:\n-3\n\nResponse trailers received:\ndate: Fri, 17 Apr 2020 19:34:42 GMT\nSent 1 request and received 1 response\n"
+    executor_mock = MiniTest::Mock.new
+    executor_mock.expect :call, GrpcurlResult.new({ command: SUCCESS_MOCK_COMMAND, raw_output: stream_response_example, raw_errors: "", hints: ["foo-hint1", "foo-hint2"] }), [GrpcurlBuilder]
+
+    GrpcurlExecutor.stub :execute, executor_mock do
+      post execute_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME) + ".json",
+           headers: DEFAULT_HEADERS,
+           params: DEFAULT_SUCCESS_BODY
+
+      assert_response :bad_request
+      body = @response.body
+      assert body.include?('Response parsing error. Response is not JSON. Original response:'), "Response did not contain incorrect JSON format warning: \n#{body}"
+      assert body.include?("### Parsed Response ### \n\n-1\n\n-2\n\n-3"), "Response did not contain parsed response: \n#{body}"
+    end
+    assert_mock executor_mock
+  end
+
   test 'execute - should handle failure response' do
     error_string = "Test-Error"
     executor_mock = MiniTest::Mock.new

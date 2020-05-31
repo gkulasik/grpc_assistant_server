@@ -22,7 +22,14 @@ class ServiceController < ApplicationController
       status = result.is_success? ? :ok : :bad_request
       respond_to do |format|
         # JSON format allows easier automation/FE *initial* integration
-        format.json { render json: result.to_json_response, status: status }
+        format.json {
+          begin
+            render json: result.to_json_response, status: status
+          rescue
+            alert_msg = "Response parsing error. Response is not JSON. Original response: \n\n"
+            render plain: alert_msg + result.to_text_response, status: :bad_request
+          end
+        }
         format.all { render plain: result.to_text_response, status: status }
       end
     else
