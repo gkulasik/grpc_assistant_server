@@ -175,6 +175,8 @@ Headers:
 - GRPC_META_max_message_size [int] => -max-msg-sz
 - GRPC_META_gas_options [string-hash] => None, GAS custom field
 - HTTP headers (GRPC_REQ_{header_name}) [map] => -H
+- HTTP headers - request only (GRPC_RPC_{header_name}) [map] => -rpc-header
+- HTTP headers - reflect only (GRPC_REFLECT_{header_name}) [map] => -reflect-header
 
 Path variables (Ex. path: /service/:service_name/execute/:method_name):
 - service_name (in path) [string] => symbol
@@ -183,7 +185,7 @@ Path variables (Ex. path: /service/:service_name/execute/:method_name):
 Body:
 - data (request body) [object] => -d
 
-Grpc metadata is passed in via **headers** prefixed with 'GRPC_META_' (ex. 'GRPC_META_import_path'). Regular request headers to be passed to grpcurl are prefixed with 'GRPC_REQ_' (ex. 'GRPC_REQ_Authorization'). The prefixes are removed during processing, these prefixes are only used to locate GRPC intended headers.
+Grpc metadata is passed in via **headers** prefixed with 'GRPC_META_' (ex. 'GRPC_META_import_path'). Regular request headers to be passed to grpcurl are prefixed with 'GRPC_REQ_', 'GRPC_RPC_', or 'GRPC_REFLECT_' (ex. 'GRPC_REQ_Authorization'). The prefixes are removed during processing, these prefixes are only used to locate GRPC intended headers.
 
 Note: Rails automatically upper cases header text and removes '-' in favor of '_'. So `GRPC_REQ_Authorization-key` and `GRPC_REQ_AUTHORIZATION_KEY` are equivalent. This upper casing will transfer to the grpcurl request. HTTP headers are case insensitive per the HTTP spec so this should not affect HTTP/JSON or grpc operation.
 

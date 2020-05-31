@@ -1,7 +1,13 @@
 class ServiceController < ApplicationController
   # See get_grpc_headers comment for more information
-  # GRPC_REQUEST_HEADER_PREFIX - Prefix for request headers (like Authorization)
-  GRPC_REQUEST_HEADER_PREFIX = "HTTP_GRPC_REQ_"
+  # GRPC_REQUEST_HEADER_PREFIX - Prefix for request headers (both rpc request and reflect) (like Authorization)
+  # GRPC_RPC_HEADER_PREFIX - Prefix for rpc request only headers
+  # GRPC_REFLECT_HEADER_PREFIX - Prefix for reflect only headers
+  GRPC_REQUEST_HEADER_PREFIX = "HTTP_GRPC_REQ_" # -H
+  GRPC_RPC_HEADER_PREFIX = "HTTP_GRPC_RPC_" # -rpc-header
+  GRPC_REFLECT_HEADER_PREFIX = "HTTP_GRPC_REFLECT_" # -reflect-header
+  HEADER_TYPES = [GRPC_REQUEST_HEADER_PREFIX, GRPC_RPC_HEADER_PREFIX, GRPC_REFLECT_HEADER_PREFIX]
+
   # GRPC_METADATA_PREFIX - Prefix for request metadata like service_address, import_path, or gas_options
   GRPC_METADATA_PREFIX = "HTTP_GRPC_META_"
 
@@ -9,9 +15,8 @@ class ServiceController < ApplicationController
   # Route: service_execute
   # Path: POST /service/:service_name/execute/:method_name
   def execute
-    request_headers = get_grpc_headers(GRPC_REQUEST_HEADER_PREFIX, request.headers.to_h)
     metadata_headers = get_grpc_headers(GRPC_METADATA_PREFIX, request.headers.to_h, true)
-    builder = GrpcurlBuilder.from_params(metadata_headers, request_headers, service_params.to_h, request.body.read)
+    builder = GrpcurlBuilder.from_params(metadata_headers, extract_all_headers(request.headers.to_h), service_params.to_h, request.body.read)
     if builder.valid?
       result = GrpcurlExecutor.execute(builder)
       status = result.is_success? ? :ok : :bad_request
@@ -29,9 +34,8 @@ class ServiceController < ApplicationController
   # Route: service_command
   # Path: POST /service/:service_name/command/:method_name
   def command
-    request_headers = get_grpc_headers(GRPC_REQUEST_HEADER_PREFIX, request.headers.to_h)
     metadata_headers = get_grpc_headers(GRPC_METADATA_PREFIX, request.headers.to_h, true)
-    builder = GrpcurlBuilder.from_params(metadata_headers, request_headers, service_params.to_h, request.body.read)
+    builder = GrpcurlBuilder.from_params(metadata_headers, extract_all_headers(request.headers.to_h), service_params.to_h, request.body.read)
     if builder.valid?
       render plain: builder.build(BuilderMode::COMMAND), status: :ok
     else
@@ -39,7 +43,17 @@ class ServiceController < ApplicationController
     end
   end
 
-  # Helper to get all grpc and gas headers.
+  # Helper to get all GRPC related headers.
+  # @return [Hash<Hash<String, String>>]
+  def extract_all_headers(headers)
+    request_headers_map = {}
+    HEADER_TYPES.each do |header_type|
+      request_headers_map[header_type] = get_grpc_headers(header_type, headers)
+    end
+    request_headers_map
+  end
+
+  # Helper to get grpc and gas headers.
   # Postman prefixes headers with HTTP_ and in order to differentiate from other HTTP headers we add GRPC_ or GAS_ to the prefix (making HTTP_GRPC_.../HTTP_GAS_)
   # This gets all those headers and strips them down to the actual header name without  prefix (so HTTP_GRPC_AUTHORIZATION -> auth-code becomes AUTHORIZATION -> auth-code).
   # Provides option to auto upcase (useful for metadata headers)

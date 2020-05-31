@@ -98,6 +98,8 @@ class GrpcurlBuilder
     grpcurl = add_import_path(grpcurl, builder_mode)
     grpcurl = add_service_proto_path(grpcurl)
     grpcurl = add_headers(grpcurl)
+    grpcurl = add_rpc_headers(grpcurl)
+    grpcurl = add_reflect_headers(grpcurl)
     grpcurl = add_plaintext(grpcurl)
     grpcurl = add_verbose(grpcurl, builder_mode)
     grpcurl = add_max_message_size(grpcurl)
@@ -208,8 +210,22 @@ class GrpcurlBuilder
 
   # Adds -H headers to the grpcurl command
   def add_headers(current_string)
-    return current_string if @headers.nil?
-    string_headers = @headers.map { |k, v| " -H '#{k}:#{v}' " }.join("")
+    return current_string if @headers.nil? || @headers[ServiceController::GRPC_REQUEST_HEADER_PREFIX].nil?
+    string_headers = @headers[ServiceController::GRPC_REQUEST_HEADER_PREFIX].map { |k, v| " -H '#{k}:#{v}' " }.join("")
+    current_string + string_headers
+  end
+
+  # Adds -rpc-header headers to the grpcurl command
+  def add_rpc_headers(current_string)
+    return current_string if @headers.nil? || @headers[ServiceController::GRPC_RPC_HEADER_PREFIX].nil?
+    string_headers = @headers[ServiceController::GRPC_RPC_HEADER_PREFIX].map { |k, v| " -rpc-header '#{k}:#{v}' " }.join("")
+    current_string + string_headers
+  end
+
+  # Adds -reflect-header headers to the grpcurl command
+  def add_reflect_headers(current_string)
+    return current_string if @headers.nil? || @headers[ServiceController::GRPC_REFLECT_HEADER_PREFIX].nil?
+    string_headers = @headers[ServiceController::GRPC_REFLECT_HEADER_PREFIX].map { |k, v| " -reflect-header '#{k}:#{v}' " }.join("")
     current_string + string_headers
   end
 

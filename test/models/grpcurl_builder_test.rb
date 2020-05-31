@@ -8,7 +8,8 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
   DEFAULT_SERVER_ADDRESS = 'test.example.com:443'
   DEFAULT_SERVICE_NAME = 'com.example.protos.test.ExampleService'
   DEFAULT_METHOD_NAME = 'FooMethod'
-  DEFAULT_HEADERS = { 'Authorization' => 'auth-token' }
+  DEFAULT_HEADERS = {}
+  DEFAULT_HEADERS[ServiceController::GRPC_REQUEST_HEADER_PREFIX] = {'Authorization' => 'auth-token' }
 
   DEFAULT_PRESENT_ERROR = 'Option PRESENT did not return expected result'
   DEFAULT_OMITTED_ERROR = 'Option OMITTED did not return expected result'
@@ -395,7 +396,7 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     assert_not builder.hints.include?(BuilderHints::METHOD_NAME_LEADING), "Did not expect hint to be present: #{builder.hints}"
   end
 
-  test 'should handle headers' do
+  test 'should handle -H headers' do
     # Option present
     builder = build(:grpcurl_builder, headers: DEFAULT_HEADERS)
     expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -H \'Authorization:auth-token\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
@@ -403,8 +404,42 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
 
     # Option present - multiple headers
     # Header order should be retained - if this assumption changes we can simply adjust this assertion to check for both headers being present
-    builder = build(:grpcurl_builder, headers: { 'Authorization' => 'auth-token', 'OtherHeader' => 'FooBar' })
+    multiple_headers = {}
+    multiple_headers[ServiceController::GRPC_REQUEST_HEADER_PREFIX] = { 'Authorization' => 'auth-token', 'OtherHeader' => 'FooBar' }
+    builder = build(:grpcurl_builder, headers: multiple_headers)
     expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -H \'Authorization:auth-token\'  -H \'OtherHeader:FooBar\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+
+    # Option omitted
+    builder = build(:grpcurl_builder, headers: nil)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
+  end
+
+  test 'should handle rpc headers' do
+
+    # Option present - multiple headers
+    # Header order should be retained - if this assumption changes we can simply adjust this assertion to check for both headers being present
+    multiple_headers = {}
+    multiple_headers[ServiceController::GRPC_RPC_HEADER_PREFIX] = { 'Authorization' => 'auth-token', 'rpcHeaderExample' => 'FooBar' }
+    builder = build(:grpcurl_builder, headers: multiple_headers)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -rpc-header \'Authorization:auth-token\'  -rpc-header \'rpcHeaderExample:FooBar\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+
+    # Option omitted
+    builder = build(:grpcurl_builder, headers: nil)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
+  end
+
+  test 'should handle reflect headers' do
+
+    # Option present - multiple headers
+    # Header order should be retained - if this assumption changes we can simply adjust this assertion to check for both headers being present
+    multiple_headers = {}
+    multiple_headers[ServiceController::GRPC_REFLECT_HEADER_PREFIX] = { 'Authorization' => 'auth-token', 'reflectHeaderExample' => 'FooBar' }
+    builder = build(:grpcurl_builder, headers: multiple_headers)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -reflect-header \'Authorization:auth-token\'  -reflect-header \'reflectHeaderExample:FooBar\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
     assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
 
     # Option omitted

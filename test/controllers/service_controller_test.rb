@@ -39,10 +39,23 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
   test "should get GRPC_REQ headers" do
     controller = TestGrpcController.new()
     grpc_req_only_headers = controller.get_grpc_headers(ServiceController::GRPC_REQUEST_HEADER_PREFIX, { "HTTP_GRPC_META_test" => "fail",
-                                                                                                   "HTTP_GRPC_REQ_test" => "foo",
-                                                                                                   "HTTP_OTHER_HEADER" => "bar" })
+                                                                                                         "HTTP_GRPC_REQ_test" => "foo",
+                                                                                                         "HTTP_OTHER_HEADER" => "bar" })
     expected = { "test" => "foo" }
     assert_equal expected, grpc_req_only_headers
+  end
+
+  test "extract all headers - should get all grpc related headers" do
+    controller = TestGrpcController.new()
+    headers = { "HTTP_NON_GRPC_OTHER" => "some value",
+                "HTTP_GRPC_REQ_TEST1" => "test1",
+                "HTTP_GRPC_RPC_TEST2" => "test2",
+                "HTTP_GRPC_REFLECT_TEST3" => "test3" }.merge({ "HTTP_GRPC_META_test" => "fail",
+                                                             "HTTP_OTHER_HEADER" => "bar" })
+
+    grpc_headers = controller.extract_all_headers(headers)
+    expected = {"HTTP_GRPC_REQ_"=>{"TEST1"=>"test1"}, "HTTP_GRPC_RPC_"=>{"TEST2"=>"test2"}, "HTTP_GRPC_REFLECT_"=>{"TEST3"=>"test3"}}
+    assert_equal expected, grpc_headers
   end
 
   test "should upcase sym headers when set" do
@@ -64,10 +77,24 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
     assert_equal expected_response, @response.body
   end
 
+  test "command - should handle all the different header types" do
+    headers = DEFAULT_SUCCESS_META_HEADERS.merge({ "HTTP_NON_GRPC_OTHER": "some value",
+                                                   "HTTP_GRPC_REQ_TEST1": "test1",
+                                                   "HTTP_GRPC_RPC_TEST2": "test2",
+                                                   "HTTP_GRPC_REFLECT_TEST3": "test3" })
+    post command_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
+         headers: headers,
+         params: DEFAULT_SUCCESS_BODY
+
+    assert_response :success
+    expected_response = "grpcurl  -import-path '/import/path'  -proto 'some/example/examples.proto'  -H 'TEST1:test1'  -rpc-header 'TEST2:test2'  -reflect-header 'TEST3:test3'  -plaintext  -v  -d '{\"field_one\":1,\"field_two\":\"two\",\"field_three\":true}'  example.com:443  com.example.proto.ExampleService/ExampleMethod "
+    assert_equal expected_response, @response.body
+  end
+
   test "command - should handle GAS options header" do
     # No timestamps
     post command_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
-         headers: DEFAULT_HEADERS.merge({"HTTP_GRPC_META_gas_options" => 'auto_format_dates:true'}),
+         headers: DEFAULT_HEADERS.merge({ "HTTP_GRPC_META_gas_options" => 'auto_format_dates:true' }),
          params: DEFAULT_SUCCESS_BODY
 
     assert_response :success
@@ -76,8 +103,8 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
 
     # with timestamps
     post command_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
-         headers: DEFAULT_HEADERS.merge({"HTTP_GRPC_META_gas_options" => 'auto_format_dates:true'}),
-         params: JSON.parse(DEFAULT_SUCCESS_BODY).merge({'field4' => '2020-01-01'}).to_json
+         headers: DEFAULT_HEADERS.merge({ "HTTP_GRPC_META_gas_options" => 'auto_format_dates:true' }),
+         params: JSON.parse(DEFAULT_SUCCESS_BODY).merge({ 'field4' => '2020-01-01' }).to_json
 
     assert_response :success
     expected_response = "grpcurl  -import-path '/import/path'  -proto 'some/example/examples.proto'  -H 'AUTHORIZATION:auth-token'  -plaintext  -v  -d '{\"field_one\":1,\"field_two\":\"two\",\"field_three\":true,\"field4\":{\"year\":2020,\"month\":1,\"day\":1}}'  example.com:443  com.example.proto.ExampleService/ExampleMethod "
@@ -123,27 +150,58 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
     assert_mock executor_mock
   end
 
+  test 'execute - should handle all request header types' do
+
+    modified_command = "grpcurl  -import-path '/import/path'  -proto 'some/example/examples.proto'  -H 'TEST1:test1'  -H 'TEST2:test2'  -H 'TEST3:test3'  -plaintext  -v  -d '{\"field_one\":1,\"field_two\":\"two\",\"field_three\":true}'  example.com:443  com.example.proto.ExampleService/ExampleMethod "
+    executor_mock = MiniTest::Mock.new
+    executor_mock.expect :call, GrpcurlResult.new({ command: modified_command, raw_output: SUCCESS_MOCK_RESPONSE, raw_errors: "", hints: ["foo-hint1", "foo-hint2"] }), [GrpcurlBuilder]
+
+    headers = DEFAULT_SUCCESS_META_HEADERS.merge({ "HTTP_NON_GRPC_OTHER": "some value",
+                                                   "HTTP_GRPC_REQ_TEST1": "test1",
+                                                   "HTTP_GRPC_RPC_TEST2": "test2",
+                                                   "HTTP_GRPC_REFLECT_TEST3": "test3" })
+    GrpcurlExecutor.stub :execute, executor_mock do
+      post execute_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
+           headers: headers,
+           params: DEFAULT_SUCCESS_BODY
+
+      assert_response :success
+      expected_response = "{\"exampleResponse\":{\"foo\":\"BAR\"}}"
+      assert @response.body.include?(GrpcurlResult::RESPONSE_PARSED_HEADER), 'Response is missing the parsed response header'
+      assert_not @response.body.include?(GrpcurlResult::ERROR_HEADER), 'Response contains the error header'
+      assert @response.body.include?(GrpcurlResult::HINTS_HEADER), 'Response is missing the hints header'
+      # For reliability remove formatting white space
+      assert @response.body.gsub(/\s+/, "").include?(expected_response), 'Response did not contain the parsed response'
+      assert @response.body.include?(modified_command), 'Response did not contain the command used'
+      assert @response.body.include?(SUCCESS_MOCK_RESPONSE), 'Response did not contain the full output'
+      assert @response.body.include?("- foo-hint1"), 'Response is missing a hint'
+      assert @response.body.include?("- foo-hint2"), 'Response is missing a hint'
+    end
+
+    assert_mock executor_mock
+  end
+
   test "execute - should handle GAS options header - no date" do
     executor_mock = MiniTest::Mock.new
     executor_mock.expect :call, GrpcurlResult.new({ command: SUCCESS_MOCK_COMMAND, raw_output: SUCCESS_MOCK_RESPONSE, raw_errors: "", hints: ["foo-hint1", "foo-hint2"] }), [GrpcurlBuilder]
 
     GrpcurlExecutor.stub :execute, executor_mock do
-    # No timestamps
-    post execute_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
-         headers: DEFAULT_HEADERS.merge({"HTTP_GRPC_META_gas_options" => 'auto_format_dates:true'}),
-         params: DEFAULT_SUCCESS_BODY
+      # No timestamps
+      post execute_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
+           headers: DEFAULT_HEADERS.merge({ "HTTP_GRPC_META_gas_options" => 'auto_format_dates:true' }),
+           params: DEFAULT_SUCCESS_BODY
 
-    assert_response :success
-    expected_response = "{\"exampleResponse\":{\"foo\":\"BAR\"}}"
-    assert @response.body.include?(GrpcurlResult::RESPONSE_PARSED_HEADER), 'Response is missing the parsed response header'
-    assert_not @response.body.include?(GrpcurlResult::ERROR_HEADER), 'Response contains the error header'
-    assert @response.body.include?(GrpcurlResult::HINTS_HEADER), 'Response is missing the hints header'
-    # For reliability remove formatting white space
-    assert @response.body.gsub(/\s+/, "").include?(expected_response), 'Response did not contain the parsed response'
-    assert @response.body.include?(SUCCESS_MOCK_COMMAND), 'Response did not contain the command used'
-    assert @response.body.include?(SUCCESS_MOCK_RESPONSE), 'Response did not contain the full output'
-    assert @response.body.include?("- foo-hint1"), 'Response is missing a hint'
-    assert @response.body.include?("- foo-hint2"), 'Response is missing a hint'
+      assert_response :success
+      expected_response = "{\"exampleResponse\":{\"foo\":\"BAR\"}}"
+      assert @response.body.include?(GrpcurlResult::RESPONSE_PARSED_HEADER), 'Response is missing the parsed response header'
+      assert_not @response.body.include?(GrpcurlResult::ERROR_HEADER), 'Response contains the error header'
+      assert @response.body.include?(GrpcurlResult::HINTS_HEADER), 'Response is missing the hints header'
+      # For reliability remove formatting white space
+      assert @response.body.gsub(/\s+/, "").include?(expected_response), 'Response did not contain the parsed response'
+      assert @response.body.include?(SUCCESS_MOCK_COMMAND), 'Response did not contain the command used'
+      assert @response.body.include?(SUCCESS_MOCK_RESPONSE), 'Response did not contain the full output'
+      assert @response.body.include?("- foo-hint1"), 'Response is missing a hint'
+      assert @response.body.include?("- foo-hint2"), 'Response is missing a hint'
     end
     assert_mock executor_mock
   end
@@ -156,8 +214,8 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
     GrpcurlExecutor.stub :execute, executor_mock do
       # with timestamps
       post execute_path(service_name: DEFAULT_SERVICE_NAME, method_name: DEFAULT_METHOD_NAME),
-           headers: DEFAULT_HEADERS.merge({"HTTP_GRPC_META_gas_options" => 'auto_format_dates:true'}),
-           params: JSON.parse(DEFAULT_SUCCESS_BODY).merge({'field4' => '2020-05-02T23:39:21.560Z'}).to_json
+           headers: DEFAULT_HEADERS.merge({ "HTTP_GRPC_META_gas_options" => 'auto_format_dates:true' }),
+           params: JSON.parse(DEFAULT_SUCCESS_BODY).merge({ 'field4' => '2020-05-02T23:39:21.560Z' }).to_json
 
       assert_response :success
       expected_response = "{\"exampleResponse\":{\"foo\":\"BAR\"}}"
