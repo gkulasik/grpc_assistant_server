@@ -45,6 +45,24 @@ class ServiceControllerTest < ActionDispatch::IntegrationTest
     assert_equal expected, grpc_req_only_headers
   end
 
+  test "should not convert GRPC_META headers" do
+    controller = TestGrpcController.new()
+    grpc_meta_only_headers = controller.get_grpc_headers(ServiceController::GRPC_METADATA_PREFIX, { "HTTP_GRPC_META_TEST_HEADER" => "foo",
+                                                                                                    "HTTP_GRPC_REQ_test" => "fail",
+                                                                                                    "HTTP_OTHER_HEADER" => "bar" })
+    expected = { "TEST_HEADER" => "foo" }
+    assert_equal expected, grpc_meta_only_headers
+  end
+
+  test "should convert GRPC_REQ headers" do
+    controller = TestGrpcController.new()
+    grpc_req_only_headers = controller.get_grpc_headers(ServiceController::GRPC_REQUEST_HEADER_PREFIX, { "HTTP_GRPC_META_OTHER_HEADER" => "fail",
+                                                                                                         "HTTP_GRPC_REQ_TEST_HEADER" => "foo",
+                                                                                                         "HTTP_OTHER_HEADER" => "bar" })
+    expected = { "TEST-HEADER" => "foo" }
+    assert_equal expected, grpc_req_only_headers
+  end
+
   test "extract all headers - should get all grpc related headers" do
     controller = TestGrpcController.new()
     headers = { "HTTP_NON_GRPC_OTHER" => "some value",

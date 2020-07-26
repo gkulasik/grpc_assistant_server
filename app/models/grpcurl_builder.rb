@@ -211,21 +211,21 @@ class GrpcurlBuilder
   # Adds -H headers to the grpcurl command
   def add_headers(current_string)
     return current_string if @headers.nil? || @headers[ServiceController::GRPC_REQUEST_HEADER_PREFIX].nil?
-    string_headers = @headers[ServiceController::GRPC_REQUEST_HEADER_PREFIX].map { |k, v| " -H '#{k}:#{v}' " }.join("")
+    string_headers = @headers[ServiceController::GRPC_REQUEST_HEADER_PREFIX].map { |k, v| " -H '#{GasAutoFormatter.format_header_key(k, @assistant_options)}:#{v}' " }.join("")
     current_string + string_headers
   end
 
   # Adds -rpc-header headers to the grpcurl command
   def add_rpc_headers(current_string)
     return current_string if @headers.nil? || @headers[ServiceController::GRPC_RPC_HEADER_PREFIX].nil?
-    string_headers = @headers[ServiceController::GRPC_RPC_HEADER_PREFIX].map { |k, v| " -rpc-header '#{k}:#{v}' " }.join("")
+    string_headers = @headers[ServiceController::GRPC_RPC_HEADER_PREFIX].map { |k, v| " -rpc-header '#{GasAutoFormatter.format_header_key(k, @assistant_options)}:#{v}' " }.join("")
     current_string + string_headers
   end
 
   # Adds -reflect-header headers to the grpcurl command
   def add_reflect_headers(current_string)
     return current_string if @headers.nil? || @headers[ServiceController::GRPC_REFLECT_HEADER_PREFIX].nil?
-    string_headers = @headers[ServiceController::GRPC_REFLECT_HEADER_PREFIX].map { |k, v| " -reflect-header '#{k}:#{v}' " }.join("")
+    string_headers = @headers[ServiceController::GRPC_REFLECT_HEADER_PREFIX].map { |k, v| " -reflect-header '#{GasAutoFormatter.format_header_key(k, @assistant_options)}:#{v}' " }.join("")
     current_string + string_headers
   end
 

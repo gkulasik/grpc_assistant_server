@@ -21,6 +21,18 @@ class GasAutoFormatter
     end
   end
 
+  # Format headers. Allows conversion hyphens back to underscore (more standard to use hyphens for headers than underscores).
+  # Rails does not allow us to get the original header syntax (header, case, etc.) so we allow the override
+  # to use underscores instead of hyphens if needed.
+  # @param [String] header_key
+  # @param [Hash] format_options
+  # @return [String]
+  def self.format_header_key(header_key, format_options)
+    return nil if header_key.nil? || format_options.nil?
+    return header_key.gsub('-', '_') if Util.eval_to_bool(format_options[GasFormatType::USE_HEADER_UNDERSCORES])
+    header_key
+  end
+
   # Format dates (handles both Date and Timestamps (iso)).
   # Convert if the value is a date/timestamp, leave all other values unchanged. Keys not modified at all either.
   # @param [Hash] json

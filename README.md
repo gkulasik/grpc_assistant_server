@@ -174,7 +174,7 @@ Headers:
 - GRPC_META_connect_timeout [int] => -connect-timeout
 - GRPC_META_max_message_size [int] => -max-msg-sz
 - GRPC_META_gas_options [string-hash] => None, GAS custom field
-- HTTP headers (GRPC_REQ_{header_name}) [map] => -H
+- HTTP headers (GRPC_REQ_{header-name}) [map] => -H
 - HTTP headers - request only (GRPC_RPC_{header_name}) [map] => -rpc-header
 - HTTP headers - reflect only (GRPC_REFLECT_{header_name}) [map] => -reflect-header
 
@@ -187,7 +187,7 @@ Body:
 
 Grpc metadata is passed in via **headers** prefixed with 'GRPC_META_' (ex. 'GRPC_META_import_path'). Regular request headers to be passed to grpcurl are prefixed with 'GRPC_REQ_', 'GRPC_RPC_', or 'GRPC_REFLECT_' (ex. 'GRPC_REQ_Authorization'). The prefixes are removed during processing, these prefixes are only used to locate GRPC intended headers.
 
-Note: Rails automatically upper cases header text and removes '-' in favor of '_'. So `GRPC_REQ_Authorization-key` and `GRPC_REQ_AUTHORIZATION_KEY` are equivalent. This upper casing will transfer to the grpcurl request. HTTP headers are case insensitive per the HTTP spec so this should not affect HTTP/JSON or grpc operation.
+Note: Rails automatically upper cases header text. So `GRPC_REQ_Authorization-key` and `GRPC_REQ_AUTHORIZATION-KEY` are equivalent. This upper casing will transfer to the grpcurl request. All 'spaces' in a header ('-' or '_') are converted to hyphens ('-'). So `GRPC_REQ_X-Custom-Header` becomes `GRPC_REQ_X-CUSTOM-HEADER`. HTTP headers are case insensitive per the HTTP spec so this should not affect HTTP/JSON or grpc operation. Though underscores are permitted in headers per the HTTP spec, the general standard is to use hyphens as some web servers (like NGINX) ignore/strip headers with underscores. To use underscores instead of hyphens set the header `GRPC_META_gas_options: use_header_underscores:true`.
 
 More tags/options support may be added in the future. These are currently all I've needed so far for my development.
 

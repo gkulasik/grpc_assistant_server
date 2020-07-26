@@ -1,6 +1,6 @@
 require 'test_helper'
 class GasAutoFormatterTest < ActiveSupport::TestCase
-  FORMAT_OPTIONS_DEFAULT = { GasFormatType::AUTO_DATE_FORMAT => true }
+  FORMAT_OPTIONS_DEFAULT = { GasFormatType::AUTO_DATE_FORMAT => true, GasFormatType::USE_HEADER_UNDERSCORES => true}
 
   test 'format - general' do
     # Failure cases - return input data
@@ -85,6 +85,30 @@ class GasAutoFormatterTest < ActiveSupport::TestCase
 
     timestamp_with_nanos = { seconds: 1606865961, nanos: 560000000 }
     assert_equal timestamp_with_nanos, result[:timestamp_with_nanos]
+  end
+
+  # Check that with option we underscore
+  # Without option we leave header AS IS
+  test 'format header key' do
+    # Safety cases
+    assert_nil GasAutoFormatter.format_header_key(nil, {})
+    assert_nil GasAutoFormatter.format_header_key("some", nil)
+    assert_nil GasAutoFormatter.format_header_key(nil, nil)
+
+    underscore_headers = { GasFormatType::USE_HEADER_UNDERSCORES => true}
+    assert_equal "Random_header", GasAutoFormatter.format_header_key("Random-header", underscore_headers)
+    assert_equal "OTHER_HEADER", GasAutoFormatter.format_header_key("OTHER-HEADER", underscore_headers)
+    assert_equal "other_header", GasAutoFormatter.format_header_key("other-header", underscore_headers)
+
+    no_underscore_headers = { GasFormatType::USE_HEADER_UNDERSCORES => false}
+    assert_equal "Random-header", GasAutoFormatter.format_header_key("Random-header", no_underscore_headers)
+    assert_equal "OTHER-HEADER", GasAutoFormatter.format_header_key("OTHER-HEADER", no_underscore_headers)
+    assert_equal "other-header", GasAutoFormatter.format_header_key("other-header", no_underscore_headers)
+
+    blank_headers = {}
+    assert_equal "Random-header", GasAutoFormatter.format_header_key("Random-header", blank_headers)
+    assert_equal "OTHER-HEADER", GasAutoFormatter.format_header_key("OTHER-HEADER", blank_headers)
+    assert_equal "other-header", GasAutoFormatter.format_header_key("other-header", blank_headers)
   end
 
 end
