@@ -87,6 +87,29 @@ class GasAutoFormatterTest < ActiveSupport::TestCase
     assert_equal timestamp_with_nanos, result[:timestamp_with_nanos]
   end
 
+  test 'format dates handles nested timestamps' do
+    body = {
+        top_level_ts: "2020-04-04T23:39:21Z",
+        nested_ts: {
+            timestamp_with_offset: "2050-05-02T17:40:11+0000",
+            another_nested_ts: {
+                timestamp_with_nanos: "2020-12-01T23:39:21.560Z"
+            }
+        }
+    }
+
+    result = GasAutoFormatter.format_dates(body, FORMAT_OPTIONS_DEFAULT)
+
+    timestamp_without_nanos = { seconds: 1586043561, nanos: 0 }
+    assert_equal timestamp_without_nanos, result[:top_level_ts]
+
+    timestamp_with_offset = { seconds: 2535126011, nanos: 0 }
+    assert_equal timestamp_with_offset, result[:nested_ts][:timestamp_with_offset]
+
+    timestamp_with_nanos = { seconds: 1606865961, nanos: 560000000 }
+    assert_equal timestamp_with_nanos, result[:nested_ts][:another_nested_ts][:timestamp_with_nanos]
+  end
+
   # Check that with option we underscore
   # Without option we leave header AS IS
   test 'format header key' do

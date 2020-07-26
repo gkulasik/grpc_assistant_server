@@ -39,29 +39,34 @@ class GasAutoFormatter
   # @param [Hash] format_options
   # @return [Hash] updated json
   def self.format_dates(json, format_options)
+
+    convert = -> (value) {
+        if Util.is_iso_timestamp?(value)
+          parsed_timestamp = Time.iso8601(value)
+          # Ref for Timestamp format: https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/timestamp
+          # Ref for strftime formatter: https://apidock.com/ruby/DateTime/strftime
+          # %s is seconds since 1970-01-01, %9N is fractional seconds to 9 places (nano second)
+          {
+              seconds: parsed_timestamp.strftime('%s').to_i,
+              nanos: parsed_timestamp.strftime('%9N').to_i
+          }
+        else
+          parsed_timestamp = Date.iso8601(value)
+          # Ref for Date format: https://github.com/googleapis/googleapis/blob/master/google/type/date.proto
+          {
+              year: parsed_timestamp.year,
+              month: parsed_timestamp.month,
+              day: parsed_timestamp.day
+          }
+        end
+    }
+
     return json unless Util.eval_to_bool(format_options[GasFormatType::AUTO_DATE_FORMAT])
     json = json.transform_values do |value|
       adjusted_value = if Util.is_date?(value) # Date check also picks up full timestamps
-                         if Util.is_iso_timestamp?(value)
-                           parsed_timestamp = Time.iso8601(value)
-                           # Ref for Timestamp format: https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/timestamp
-                           # Ref for strftime formatter: https://apidock.com/ruby/DateTime/strftime
-                           # %s is seconds since 1970-01-01, %9N is fractional seconds to 9 places (nano second)
-                           {
-                               seconds: parsed_timestamp.strftime('%s').to_i,
-                               nanos: parsed_timestamp.strftime('%9N').to_i
-                           }
-                         else
-                           parsed_timestamp = Date.iso8601(value)
-                           # Ref for Date format: https://github.com/googleapis/googleapis/blob/master/google/type/date.proto
-                           {
-                               year: parsed_timestamp.year,
-                               month: parsed_timestamp.month,
-                               day: parsed_timestamp.day
-                           }
-                         end
+                         convert.call(value)
                        else
-                         value
+                         value.is_a?(Hash) ? format_dates(value, format_options) : value
                        end
       adjusted_value
     end
