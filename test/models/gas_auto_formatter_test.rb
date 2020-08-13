@@ -19,7 +19,7 @@ class GasAutoFormatterTest < ActiveSupport::TestCase
                  'Format should not change dates with auto_date_format off'
   end
 
-  test 'format calls format dates' do
+  test 'format - calls format_dates() method' do
     format_dates_mock = MiniTest::Mock.new
     format_dates_mock.expect :call, {}, [{ "foo" => "bar" }, FORMAT_OPTIONS_DEFAULT]
 
