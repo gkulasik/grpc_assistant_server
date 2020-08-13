@@ -1,6 +1,6 @@
 require 'test_helper'
 class GasAutoFormatterTest < ActiveSupport::TestCase
-  FORMAT_OPTIONS_DEFAULT = { GasFormatType::AUTO_DATE_FORMAT => true }
+  FORMAT_OPTIONS_DEFAULT = { GasFormatType::AUTO_DATE_FORMAT => true, GasFormatType::USE_HEADER_UNDERSCORES => true}
 
   test 'format - general' do
     # Failure cases - return input data
@@ -19,7 +19,7 @@ class GasAutoFormatterTest < ActiveSupport::TestCase
                  'Format should not change dates with auto_date_format off'
   end
 
-  test 'format calls format dates' do
+  test 'format - calls format_dates() method' do
     format_dates_mock = MiniTest::Mock.new
     format_dates_mock.expect :call, {}, [{ "foo" => "bar" }, FORMAT_OPTIONS_DEFAULT]
 
@@ -85,6 +85,53 @@ class GasAutoFormatterTest < ActiveSupport::TestCase
 
     timestamp_with_nanos = { seconds: 1606865961, nanos: 560000000 }
     assert_equal timestamp_with_nanos, result[:timestamp_with_nanos]
+  end
+
+  test 'format dates handles nested timestamps' do
+    body = {
+        top_level_ts: "2020-04-04T23:39:21Z",
+        nested_ts: {
+            timestamp_with_offset: "2050-05-02T17:40:11+0000",
+            another_nested_ts: {
+                timestamp_with_nanos: "2020-12-01T23:39:21.560Z"
+            }
+        }
+    }
+
+    result = GasAutoFormatter.format_dates(body, FORMAT_OPTIONS_DEFAULT)
+
+    timestamp_without_nanos = { seconds: 1586043561, nanos: 0 }
+    assert_equal timestamp_without_nanos, result[:top_level_ts]
+
+    timestamp_with_offset = { seconds: 2535126011, nanos: 0 }
+    assert_equal timestamp_with_offset, result[:nested_ts][:timestamp_with_offset]
+
+    timestamp_with_nanos = { seconds: 1606865961, nanos: 560000000 }
+    assert_equal timestamp_with_nanos, result[:nested_ts][:another_nested_ts][:timestamp_with_nanos]
+  end
+
+  # Check that with option we underscore
+  # Without option we leave header AS IS
+  test 'format header key' do
+    # Safety cases
+    assert_nil GasAutoFormatter.format_header_key(nil, {})
+    assert_nil GasAutoFormatter.format_header_key("some", nil)
+    assert_nil GasAutoFormatter.format_header_key(nil, nil)
+
+    underscore_headers = { GasFormatType::USE_HEADER_UNDERSCORES => true}
+    assert_equal "Random_header", GasAutoFormatter.format_header_key("Random-header", underscore_headers)
+    assert_equal "OTHER_HEADER", GasAutoFormatter.format_header_key("OTHER-HEADER", underscore_headers)
+    assert_equal "other_header", GasAutoFormatter.format_header_key("other-header", underscore_headers)
+
+    no_underscore_headers = { GasFormatType::USE_HEADER_UNDERSCORES => false}
+    assert_equal "Random-header", GasAutoFormatter.format_header_key("Random-header", no_underscore_headers)
+    assert_equal "OTHER-HEADER", GasAutoFormatter.format_header_key("OTHER-HEADER", no_underscore_headers)
+    assert_equal "other-header", GasAutoFormatter.format_header_key("other-header", no_underscore_headers)
+
+    blank_headers = {}
+    assert_equal "Random-header", GasAutoFormatter.format_header_key("Random-header", blank_headers)
+    assert_equal "OTHER-HEADER", GasAutoFormatter.format_header_key("OTHER-HEADER", blank_headers)
+    assert_equal "other-header", GasAutoFormatter.format_header_key("other-header", blank_headers)
   end
 
 end

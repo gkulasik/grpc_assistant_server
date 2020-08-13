@@ -8,7 +8,8 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
   DEFAULT_SERVER_ADDRESS = 'test.example.com:443'
   DEFAULT_SERVICE_NAME = 'com.example.protos.test.ExampleService'
   DEFAULT_METHOD_NAME = 'FooMethod'
-  DEFAULT_HEADERS = { 'Authorization' => 'auth-token' }
+  DEFAULT_HEADERS = {}
+  DEFAULT_HEADERS[ServiceController::GRPC_REQUEST_HEADER_PREFIX] = {'Authorization' => 'auth-token' }
 
   DEFAULT_PRESENT_ERROR = 'Option PRESENT did not return expected result'
   DEFAULT_OMITTED_ERROR = 'Option OMITTED did not return expected result'
@@ -395,7 +396,14 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
     assert_not builder.hints.include?(BuilderHints::METHOD_NAME_LEADING), "Did not expect hint to be present: #{builder.hints}"
   end
 
-  test 'should handle headers' do
+
+  # Note on header testing. Headers are automatically upcased and convert all underscores to hyphens. The service
+  # controller will automatically revert this change as it is typical to use hyphens when adding custom
+  # headers (underscores are not handled by all servers). Therefore the regular header tests ensure that nothing is
+  # changed while the underscore_override header tests ensure that the underscores are put back where they should be.
+
+
+  test 'should handle -H headers' do
     # Option present
     builder = build(:grpcurl_builder, headers: DEFAULT_HEADERS)
     expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -H \'Authorization:auth-token\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
@@ -403,13 +411,72 @@ class GrpcurlBuilderTest < ActiveSupport::TestCase
 
     # Option present - multiple headers
     # Header order should be retained - if this assumption changes we can simply adjust this assertion to check for both headers being present
-    builder = build(:grpcurl_builder, headers: { 'Authorization' => 'auth-token', 'OtherHeader' => 'FooBar' })
-    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -H \'Authorization:auth-token\'  -H \'OtherHeader:FooBar\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    multiple_headers = {}
+    multiple_headers[ServiceController::GRPC_REQUEST_HEADER_PREFIX] = { 'Authorization' => 'auth-token', 'Other-Header' => 'FooBar' }
+    builder = build(:grpcurl_builder, headers: multiple_headers)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -H \'Authorization:auth-token\'  -H \'Other-Header:FooBar\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
     assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
 
     # Option omitted
     builder = build(:grpcurl_builder, headers: nil)
     expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
     assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
+  end
+
+  test 'should handle rpc headers' do
+
+    # Option present - multiple headers
+    # Header order should be retained - if this assumption changes we can simply adjust this assertion to check for both headers being present
+    multiple_headers = {}
+    multiple_headers[ServiceController::GRPC_RPC_HEADER_PREFIX] = { 'Authorization' => 'auth-token', 'rpcHeader-Example' => 'FooBar' }
+    builder = build(:grpcurl_builder, headers: multiple_headers)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -rpc-header \'Authorization:auth-token\'  -rpc-header \'rpcHeader-Example:FooBar\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+
+    # Option omitted
+    builder = build(:grpcurl_builder, headers: nil)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
+  end
+
+  test 'should handle reflect headers' do
+
+    # Option present - multiple headers
+    # Header order should be retained - if this assumption changes we can simply adjust this assertion to check for both headers being present
+    multiple_headers = {}
+    multiple_headers[ServiceController::GRPC_REFLECT_HEADER_PREFIX] = { 'Authorization' => 'auth-token', 'reflect-Header_Example' => 'FooBar' }
+    builder = build(:grpcurl_builder, headers: multiple_headers)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -reflect-header \'Authorization:auth-token\'  -reflect-header \'reflect-Header_Example:FooBar\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+
+    # Option omitted
+    builder = build(:grpcurl_builder, headers: nil)
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_OMITTED_ERROR
+  end
+
+  # Handle headers with underscore options - basically it does not modify the headers at all
+  test 'should handle underscore override -H headers' do
+    UNDERSCORE_HEADERS = {}
+    UNDERSCORE_HEADERS[ServiceController::GRPC_REQUEST_HEADER_PREFIX] = {'Authorization' => 'auth-token', 'Other-Header-Test' => 'foo' }
+    builder = build(:grpcurl_builder, headers: UNDERSCORE_HEADERS, assistant_options: 'use_header_underscores:true')
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -H \'Authorization:auth-token\'  -H \'Other_Header_Test:foo\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+  end
+
+  test 'should handle underscore override rpc headers' do
+    UNDERSCORE_HEADERS = {}
+    UNDERSCORE_HEADERS[ServiceController::GRPC_RPC_HEADER_PREFIX] = {'Authorization' => 'auth-token', 'Other-Header_Test' => 'foo' }
+    builder = build(:grpcurl_builder, headers: UNDERSCORE_HEADERS, assistant_options: 'use_header_underscores:true')
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -rpc-header \'Authorization:auth-token\'  -rpc-header \'Other_Header_Test:foo\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
+  end
+
+  test 'should handle underscore override reflect headers' do
+    UNDERSCORE_HEADERS = {}
+    UNDERSCORE_HEADERS[ServiceController::GRPC_REFLECT_HEADER_PREFIX] = {'Authorization' => 'auth-token', 'Other_Header_Test' => 'foo' }
+    builder = build(:grpcurl_builder, headers: UNDERSCORE_HEADERS, assistant_options: 'use_header_underscores:true')
+    expected = 'grpcurl  -import-path \'/path/to/importable/protos\'  -proto \'path/to/main/service/proto/file.proto\'  -reflect-header \'Authorization:auth-token\'  -reflect-header \'Other_Header_Test:foo\'  -d \'{"test":"json data"}\'  example.com:443  com.example.protos.ExampleService/ExampleMethod '
+    assert_equal expected, builder.build, DEFAULT_PRESENT_ERROR
   end
 end

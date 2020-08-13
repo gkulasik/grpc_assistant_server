@@ -66,7 +66,10 @@ class GrpcurlResult
     end
     adjusted_response_start = response_start + GRPC_RESPONSE_START_MARKER.length
     adjusted_response_end = response_end - 1
-    output[adjusted_response_start..adjusted_response_end]
+
+    extracted_output = output[adjusted_response_start..adjusted_response_end]
+    stream_cleaned_output = extracted_output.gsub(GRPC_RESPONSE_START_MARKER, '')
+    stream_cleaned_output
   end
 
   # Convert GrpcResult into an API response with relevant information

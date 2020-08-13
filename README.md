@@ -19,7 +19,7 @@ Dockerized HTTP/JSON proxy server for local grpc development without the struggl
 
 ## Quickstart
 
-1. Install Docker for Mac (or equivalent for Windows/Linux).
+1. Install Docker for Mac (or equivalent for Windows/Linux). Ensure your docker networking is setup to allow accessing the docker container from your host environment (Mac example https://docs.docker.com/docker-for-mac/networking/#use-cases-and-workarounds).
 2. Download the code via git clone: `git clone https://github.com/gkulasik/grpc_assistant_server.git`. This will create a new directory called `grpc_assistant_server` with all the necessary files.
 3. `cd` into the new `grpc_assistant_server directory` and run `./start_grpc_assistant_server.sh`. The first run may take some time as the docker containers are pulled from DockerHub or built locally. Subsequent runs will be substantially faster.
 4. The service should be up and running!
@@ -174,7 +174,9 @@ Headers:
 - GRPC_META_connect_timeout [int] => -connect-timeout
 - GRPC_META_max_message_size [int] => -max-msg-sz
 - GRPC_META_gas_options [string-hash] => None, GAS custom field
-- HTTP headers (GRPC_REQ_{header_name}) [map] => -H
+- HTTP headers (GRPC_REQ_{header-name}) [map] => -H
+- HTTP headers - request only (GRPC_RPC_{header_name}) [map] => -rpc-header
+- HTTP headers - reflect only (GRPC_REFLECT_{header_name}) [map] => -reflect-header
 
 Path variables (Ex. path: /service/:service_name/execute/:method_name):
 - service_name (in path) [string] => symbol
@@ -183,9 +185,9 @@ Path variables (Ex. path: /service/:service_name/execute/:method_name):
 Body:
 - data (request body) [object] => -d
 
-Grpc metadata is passed in via **headers** prefixed with 'GRPC_META_' (ex. 'GRPC_META_import_path'). Regular request headers to be passed to grpcurl are prefixed with 'GRPC_REQ_' (ex. 'GRPC_REQ_Authorization'). The prefixes are removed during processing, these prefixes are only used to locate GRPC intended headers.
+Grpc metadata is passed in via **headers** prefixed with 'GRPC_META_' (ex. 'GRPC_META_import_path'). Regular request headers to be passed to grpcurl are prefixed with 'GRPC_REQ_', 'GRPC_RPC_', or 'GRPC_REFLECT_' (ex. 'GRPC_REQ_Authorization'). The prefixes are removed during processing, these prefixes are only used to locate GRPC intended headers.
 
-Note: Rails automatically upper cases header text and removes '-' in favor of '_'. So `GRPC_REQ_Authorization-key` and `GRPC_REQ_AUTHORIZATION_KEY` are equivalent. This upper casing will transfer to the grpcurl request. HTTP headers are case insensitive per the HTTP spec so this should not affect HTTP/JSON or grpc operation.
+Note: Rails automatically upper cases header text. So `GRPC_REQ_Authorization-key` and `GRPC_REQ_AUTHORIZATION-KEY` are equivalent. This upper casing will transfer to the grpcurl request. All 'spaces' in a header ('-' or '_') are converted to hyphens ('-'). So `GRPC_REQ_X-Custom-Header` becomes `GRPC_REQ_X-CUSTOM-HEADER`. HTTP headers are case insensitive per the HTTP spec so this should not affect HTTP/JSON or grpc operation. Though underscores are permitted in headers per the HTTP spec, the general standard is to use hyphens as some web servers (like NGINX) ignore/strip headers with underscores. To use underscores instead of hyphens set the header `GRPC_META_gas_options: use_header_underscores:true`.
 
 More tags/options support may be added in the future. These are currently all I've needed so far for my development.
 
@@ -414,6 +416,10 @@ Notice in particular the body that was generated from that request (extract belo
     }
 }
 ```
+
+## Streaming
+
+GAS supports streaming requests. GAS waits until the stream completes so the response will be delayed (this is a limitation of HTTP).
 
 ## Compatibility
 

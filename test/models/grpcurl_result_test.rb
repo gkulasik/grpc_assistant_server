@@ -51,6 +51,15 @@ class GrpcurlResultTest < ActiveSupport::TestCase
     assert_equal expected_three, result.parse_raw_output("test test \ntest [] {test-data} \n #{GrpcurlResult::GRPC_RESPONSE_START_MARKER}\n{\"test\":[\"foo\",\"bar\"], \"foo\":\"bar\"\n}\n#{GrpcurlResult::GRPC_RESPONSE_END_MARKER}")
   end
 
+  test 'parse raw output - streaming output' do
+    result = build(:grpcurl_result_success)
+
+    # Ensure 'Response Contents' is removed in streamed response
+    input_text = "#{GrpcurlResult::GRPC_RESPONSE_START_MARKER}\n-1\n#{GrpcurlResult::GRPC_RESPONSE_START_MARKER}\n-2\n#{GrpcurlResult::GRPC_RESPONSE_START_MARKER}\n-3\n#{GrpcurlResult::GRPC_RESPONSE_END_MARKER}"
+    expected = "\n-1\n\n-2\n\n-3\n"
+    assert_equal expected, result.parse_raw_output(input_text)
+  end
+
   test 'to text response - success' do
     min_success_response_string = "
         Response contents:
