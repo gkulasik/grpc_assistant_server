@@ -1,17 +1,25 @@
 FROM ruby:2.6.3
 
 # Install/update dependencies
-RUN apt-get update && apt-get install -y golang-go git make musl-dev libsqlite3-dev
+RUN apt-get update && \
+    apt-get install -y git make musl-dev libsqlite3-dev curl build-essential file locales bash && \
+    rm -rf /var/lib/apt/lists/*
 
-# Configure Go
-ENV GOROOT /usr/lib/go
-ENV GOPATH /go
-ENV PATH /go/bin:$PATH
+# Install Homebrew for easier installations
+RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
-# Install grpcurl
-RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
-RUN go get github.com/fullstorydev/grpcurl
-RUN go install github.com/fullstorydev/grpcurl/cmd/grpcurl
+RUN useradd -m -s /bin/bash linuxbrew && \
+    echo 'linuxbrew ALL=(ALL) NOPASSWD:ALL' >>/etc/sudoers
+
+USER linuxbrew
+RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+
+
+USER root
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:${PATH}"
+
+# Insall grpcurl
+RUN brew install grpcurl
 
 # Setup ruby/app env
 RUN gem install bundler -v '2.0.1'
